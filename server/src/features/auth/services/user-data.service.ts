@@ -1,8 +1,15 @@
 import bcrypt from "bcrypt";
+import { createContext } from "../../../db/createContext";
+import { UserRepository, type IUserFilter } from "./repositories";
 import type { InsertModels, ViewModels } from "../types";
-import type { IUserFilter, UserRepository } from "./repositories";
 
 type NewUser = InsertModels.User;
+
+export async function createUserDataService() {
+  const dbContext = await createContext();
+  const userRepoInstance = new UserRepository(dbContext);
+  return new UserDataService(userRepoInstance);
+}
 
 export class UserDataService {
   private readonly _userRepository: UserRepository;
