@@ -1,18 +1,26 @@
 import type { Request, Response } from "express";
+import type { RegisterSchema } from "../schemas/register.schema";
 
-export async function handleRegister(req: Request, res: Response) {
+export async function handleRegister(
+  req: Request<{}, {}, RegisterSchema>,
+  res: Response
+) {
   //  todo: validate if user exists
-  const user = req.body;
+  const { body: user, requestLogger, userDataService } = req;
 
-  const isExistingUser: boolean = true;
+  const foundUser = await userDataService.tryGetUser({
+    type: "user",
+    user,
+  });
 
-  if (isExistingUser) {
-    //  todo: log here
-    res.status(409).json({ msg: "User already exists." });
+  if (foundUser) {
+    const msg = "User already exists.";
+    requestLogger.log("debug", msg);
+    res.status(409).json({ msg });
   }
 
   // inserting user
-  const inserted = {};
+  const inserted = await userDataService.insertUser(user);
 
   // todo: add logging
   return inserted
