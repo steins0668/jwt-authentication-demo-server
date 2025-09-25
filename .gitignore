@@ -7,3 +7,6 @@ server/node_modules
 
 #environment variables
 server/.env
+
+#db 
+server/demo_sqlite.db
