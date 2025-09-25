@@ -10,7 +10,11 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate --config=./config/drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=./config/drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config=./config/drizzle.config.ts",
+    "db:push": "drizzle-kit push --config=./config/drizzle.config.ts"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
