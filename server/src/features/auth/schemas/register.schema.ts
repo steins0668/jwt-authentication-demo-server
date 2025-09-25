@@ -18,7 +18,7 @@ export const registerSchema = z.object({
     })
     .regex(USERNAME, { error: "Invalid username." }),
 
-  password: z
+  passwordHash: z
     .string({
       error: (iss) =>
         iss.input === undefined ? "Password is required." : "Invalid Password",
@@ -26,4 +26,6 @@ export const registerSchema = z.object({
     .regex(PASSWORD, {
       error: "Invalid password.",
     }),
+
+  roleId: z.number(),
 });
