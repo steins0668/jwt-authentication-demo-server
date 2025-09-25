@@ -1,6 +1,7 @@
 import express from "express";
 import cors, { type CorsOptions } from "cors";
 import dotenv from "dotenv";
+import { attachRequestLogger, requestProfiler } from "./middlewares";
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json()); // json parsing
+
+app.use(attachRequestLogger);
+app.use(requestProfiler);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
