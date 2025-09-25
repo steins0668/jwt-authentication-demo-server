@@ -1,6 +1,6 @@
 import * as schema from "../../../models";
 
-export type RolesTable = typeof schema.Role;
-export type SessionTokensTable = typeof schema.SessionToken;
-export type UserSessionsTable = typeof schema.UserSession;
-export type UsersTable = typeof schema.User;
+export type Roles = typeof schema.Role;
+export type SessionTokens = typeof schema.SessionToken;
+export type UserSessions = typeof schema.UserSession;
+export type Users = typeof schema.User;

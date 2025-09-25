@@ -4,8 +4,8 @@ import { Role } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
-type NewRole = InsertModels.NewRole;
-type RoleViewModel = ViewModels.RoleViewModel;
+type NewRole = InsertModels.Role;
+type RoleViewModel = ViewModels.Role;
 type RoleFilter =
   | {
       searchBy: "id";
@@ -16,7 +16,7 @@ type RoleFilter =
       roleName: string;
     };
 
-export class RoleRepository extends Repository<Tables.RolesTable> {
+export class RoleRepository extends Repository<Tables.Roles> {
   public constructor(context: DbContext) {
     super(context, Role);
   }
@@ -25,8 +25,8 @@ export class RoleRepository extends Repository<Tables.RolesTable> {
    * @public
    * @async
    * @function insertRole
-   * @description Asynchronously inserts a {@link InsertModels.NewRole} object into the
-   * {@link Tables.RolesTable}.
+   * @description Asynchronously inserts a {@link InsertModels.Role} object into the
+   * {@link Tables.Roles}.
    *
    * @param role - The {@link NewRole} object to be inserted.
    * @returns - The {@link Role.roleId} if the insert operation is successful, `undefined` otherwise.

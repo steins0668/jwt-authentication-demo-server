@@ -4,10 +4,10 @@ import { User } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
-type NewUser = InsertModels.NewUser;
-type UserViewModel = ViewModels.UserViewModel;
+type NewUser = InsertModels.User;
+type UserViewModel = ViewModels.User;
 
-export class UserRepository extends Repository<Tables.UsersTable> {
+export class UserRepository extends Repository<Tables.Users> {
   public constructor(context: DbContext) {
     super(context, User);
   }
@@ -16,8 +16,8 @@ export class UserRepository extends Repository<Tables.UsersTable> {
    * @public
    * @async
    * @function insertUser
-   * @description Asynchronously inserts a {@link InsertModels.NewUser} object into the
-   * {@link Tables.UsersTable}.
+   * @description Asynchronously inserts a {@link InsertModels.User} object into the
+   * {@link Tables.Users}.
    *
    * @param user - The {@link NewUser} object to be inserted.
    * @returns - The {@link User.userId} if the insert operation is successful, `undefined` otherwise.

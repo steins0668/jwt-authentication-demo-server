@@ -1,6 +1,6 @@
 import * as schema from "../../../models";
 
-export type RoleViewModel = typeof schema.Role.$inferSelect;
-export type SessionTokenViewModel = typeof schema.SessionToken.$inferSelect;
-export type UserSessionViewModel = typeof schema.UserSession.$inferSelect;
-export type UserViewModel = typeof schema.User.$inferSelect;
+export type Role = typeof schema.Role.$inferSelect;
+export type SessionToken = typeof schema.SessionToken.$inferSelect;
+export type UserSession = typeof schema.UserSession.$inferSelect;
+export type User = typeof schema.User.$inferSelect;
