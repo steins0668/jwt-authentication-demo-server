@@ -57,10 +57,14 @@ export class RequestLogger {
   public endRequestProfiler(statusCode: number): void {
     if (!this._profiler) return;
 
-    const logHeader = this.__constructLogHeader();
-    const profilerMsg = `${logHeader} Request completed with status ${statusCode}.`;
+    const { method, originalUrl } = this._req;
 
-    this._profiler.done({ message: profilerMsg });
+    this._profiler.done({
+      method,
+      originalUrl,
+      message: "Request completed.",
+      statusCode,
+    });
   }
 
   /**
@@ -80,25 +84,12 @@ export class RequestLogger {
     msg: string,
     err?: unknown
   ): void {
-    const logHeader = this.__constructLogHeader();
-    const logMsg = `${logHeader} ${msg}`;
-
-    level === "error" && err
-      ? this._logger.log(level, logMsg, err)
-      : this._logger.log(level, logMsg);
-  }
-
-  /**
-   * @private
-   * @function __getLogHeader
-   * @description Helper function for constructing the log header from the `method`
-   * and `originalUrl` in the {@link Request} object.
-   * @returns A `string` containing the `logHeader`.
-   */
-  private __constructLogHeader(): string {
     const { method, originalUrl } = this._req;
-    const logHeader = `[${method} ${originalUrl}]`;
 
-    return logHeader;
+    this._logger.log(level, msg, {
+      method,
+      originalUrl,
+      ...(err ? { err } : {}),
+    });
   }
 }
