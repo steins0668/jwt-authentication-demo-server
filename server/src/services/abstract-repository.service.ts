@@ -22,20 +22,20 @@ export abstract class Repository<
    * @async
    * @function insertRow
    * @description Asynchronously inserts a new row into a table and returns the inserted row if successful.
-   * If the insert operation fails, logs the error and returns `null`.
+   * If the insert operation fails, returns `undefined`.
    * @param newRow - The new row to be inserted.
-   * @returns The inserted object if successful or `null` if the insert operation fails.
+   * @returns The inserted object if successful or `undefined` if the insert operation fails.
    */
   protected async insertRow(
     newRow: TInsertModel
-  ): Promise<TSelectResult | null> {
+  ): Promise<TSelectResult | undefined> {
     const inserted = await this._dbContext
       .insert(this._table)
       .values([newRow])
       .onConflictDoNothing()
       .returning()
       .then((result) => result[0]);
-    return inserted ? (inserted as TSelectResult) : null;
+    return inserted as TSelectResult | undefined;
   }
   /**
    * @protected
@@ -60,7 +60,7 @@ export abstract class Repository<
       .limit(1)
       .then((result) => result[0]);
 
-    return result as TSelectResult;
+    return result as TSelectResult | undefined;
   }
   /**
    * Retrieves a paginated list of rows from the database table, optionally applying a `WHERE` clause.
