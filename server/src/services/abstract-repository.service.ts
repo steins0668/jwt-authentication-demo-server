@@ -1,12 +1,9 @@
 import { asc, desc, SQL } from "drizzle-orm";
 import { SQLiteTable } from "drizzle-orm/sqlite-core";
-import { LogUtil } from "../utils";
 
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { DbContext } from "../db/createContext";
-
-const { DbLogger } = LogUtil;
 
 export abstract class Repository<
   TTable extends SQLiteTable,
@@ -52,23 +49,18 @@ export abstract class Repository<
    * or an error results while querying the database.
    */
   protected async GetFirst(options?: {
-    whereClause?: SQL;
-  }): Promise<TSelectResult | null> {
-    try {
-      const whereClause = options?.whereClause;
+    whereClause?: SQL | undefined;
+  }): Promise<TSelectResult | undefined> {
+    const whereClause = options?.whereClause;
 
-      const result = await this._dbContext
-        .select()
-        .from(this._table)
-        .where(whereClause)
-        .limit(1)
-        .then((result) => result[0]);
+    const result = await this._dbContext
+      .select()
+      .from(this._table)
+      .where(whereClause)
+      .limit(1)
+      .then((result) => result[0]);
 
-      return result ? (result as TSelectResult) : null;
-    } catch (err) {
-      DbLogger.error(`[Repository] Failed fetch operation 'getFirst'.`, err);
-      return null;
-    }
+    return result as TSelectResult;
   }
   /**
    * Retrieves a paginated list of rows from the database table, optionally applying a `WHERE` clause.
@@ -97,7 +89,7 @@ export abstract class Repository<
    */
   protected async GetRows(options: {
     column: AnySQLiteColumn;
-    isAscending?: boolean;
+    isAscending?: boolean | undefined;
     pageSize?: number | undefined;
     pageNumber?: number | undefined;
     whereClause?: SQL | undefined;
@@ -131,7 +123,7 @@ export abstract class Repository<
    * const total = await GetCount(eq(Projects.DevTypeId, 2));
    * // Returns the number of projects with DevTypeId = 2
    */
-  protected async GetCount(whereClause?: SQL): Promise<number> {
+  protected async GetCount(whereClause?: SQL | undefined): Promise<number> {
     return await this._dbContext.$count(this._table, whereClause);
   }
 }
