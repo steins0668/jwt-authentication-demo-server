@@ -1,14 +1,11 @@
 import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext } from "../../../../db/createContext";
 import { User } from "../../../../models";
-import { LogUtil } from "../../../../utils";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
 type NewUser = InsertModels.NewUser;
 type UserViewModel = ViewModels.UserViewModel;
-
-const { DbLogger } = LogUtil;
 
 export class UserRepository extends Repository<Tables.UsersTable> {
   public constructor(context: DbContext) {
@@ -25,25 +22,9 @@ export class UserRepository extends Repository<Tables.UsersTable> {
    * @param user - The {@link NewUser} object to be inserted.
    * @returns - The {@link User.userId} if the insert operation is successful, `null` otherwise.
    */
-  public async insertUser(user: NewUser): Promise<number | null> {
-    try {
-      DbLogger.info(`[User] Attempting to insert new user...`);
-
-      const inserted = await this.insertRow(user);
-
-      if (inserted) {
-        DbLogger.info(
-          `[User] User successfully inserted with id: ${inserted.userId}`
-        );
-        return inserted.userId;
-      } else {
-        DbLogger.warn(`[User] Failed inserting user due to conflict.`);
-        return null;
-      }
-    } catch (err) {
-      DbLogger.error(`[User] Insert operation failed.`, err);
-      return null;
-    }
+  public async insertUser(user: NewUser): Promise<number | null | undefined> {
+    const inserted = await this.insertRow(user);
+    return inserted?.userId;
   }
   /**
    * @public
@@ -58,20 +39,9 @@ export class UserRepository extends Repository<Tables.UsersTable> {
   public async getUser(
     filter?: IUserFilter
   ): Promise<UserViewModel | null | undefined> {
-    const filterInfo = filter ? JSON.stringify(filter) : "none";
-    DbLogger.info(`[User] Fetching a user with filter: ${filterInfo}`);
-
     const whereClause = this.buildWhereClause(filter);
 
-    const user = await this.GetFirst({ whereClause });
-
-    if (user)
-      DbLogger.info(
-        `[User] Successfuly fetched a user with id: ${user.userId}`
-      );
-    else DbLogger.info(`[Users] No user was found for filter: ${filterInfo}`);
-
-    return user;
+    return await this.GetFirst({ whereClause });
   }
 
   /**
