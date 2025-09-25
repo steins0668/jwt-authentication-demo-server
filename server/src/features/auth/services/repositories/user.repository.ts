@@ -20,9 +20,9 @@ export class UserRepository extends Repository<Tables.UsersTable> {
    * {@link Tables.UsersTable}.
    *
    * @param user - The {@link NewUser} object to be inserted.
-   * @returns - The {@link User.userId} if the insert operation is successful, `null` otherwise.
+   * @returns - The {@link User.userId} if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertUser(user: NewUser): Promise<number | null | undefined> {
+  public async insertUser(user: NewUser): Promise<number | undefined> {
     const inserted = await this.insertRow(user);
     return inserted?.userId;
   }
@@ -34,11 +34,11 @@ export class UserRepository extends Repository<Tables.UsersTable> {
    * {@link IUserFilter}.
    *
    * @param filter - The filter to apply to the table.
-   * @returns - A {@link Promise} resolving to the found {@link UserViewModel} or `null`.
+   * @returns - A {@link Promise} resolving to the found {@link UserViewModel} or `undefined`.
    */
   public async getUser(
     filter?: IUserFilter
-  ): Promise<UserViewModel | null | undefined> {
+  ): Promise<UserViewModel | undefined> {
     const whereClause = this.buildWhereClause(filter);
 
     return await this.GetFirst({ whereClause });
