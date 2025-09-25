@@ -10,3 +10,6 @@ server/.env
 
 #db 
 server/demo_sqlite.db
+
+#logs
+server/logs/
