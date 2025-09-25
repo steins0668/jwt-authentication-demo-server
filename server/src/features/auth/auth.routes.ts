@@ -1,7 +1,10 @@
 import { Router } from "express";
 import * as controllers from "./controllers";
+import { attachUserDataService } from "./middlewares";
 
 export const authRoutes = Router();
+
+authRoutes.use(attachUserDataService);
 
 authRoutes.post("/register", controllers.handleRegister);
 
