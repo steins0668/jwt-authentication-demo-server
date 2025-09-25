@@ -55,7 +55,9 @@ export class UserRepository extends Repository<Tables.UsersTable> {
    * @param filter - The filter to apply to the table.
    * @returns - A {@link Promise} resolving to the found {@link UserViewModel} or `null`.
    */
-  public async getUser(filter?: IUserFilter): Promise<UserViewModel | null> {
+  public async getUser(
+    filter?: IUserFilter
+  ): Promise<UserViewModel | null | undefined> {
     const filterInfo = filter ? JSON.stringify(filter) : "none";
     DbLogger.info(`[User] Fetching a user with filter: ${filterInfo}`);
 
