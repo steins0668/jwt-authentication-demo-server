@@ -1,18 +1,11 @@
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
-import { createClient } from "@libsql/client/.";
 import { ENV } from "../data";
-
-let dbClient: ReturnType<typeof createClient> | null = null;
+import * as schema from "../models";
 
 export async function createContext() {
-  if (!dbClient) {
-    dbClient = createClient({
-      url: ENV.getDbUrl(),
-    });
-  }
+  const sqlite = new Database(ENV.getDbUrl());
+  sqlite.exec("PRAGMA foreign_keys=ON;");
 
-  await dbClient.execute("PRAGMA foreign_keys=ON;");
-
-  return dbClient;
+  return drizzle({ client: sqlite, schema });
 }
