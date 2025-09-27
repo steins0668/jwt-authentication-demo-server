@@ -74,34 +74,48 @@ export class UserDataService {
    * during register operations.
    * @param options.login A {@link LoginOptions} object used for filtering the databse query
    * during login operations.
-   * @returns A `promise` resolving to a {@link UserViewModel} if a `User` is found, or
-   * `undefined` if no `User` is found.
+   * @returns A `promise` resolving to a success result object containing {@link UserViewModel} if a `User`
+   * is found, or `undefined` if no `User` is found. If the query operation fails, returns a fail result
+   * object containing a message as well as the stack trace.
    */
   public async tryGetUser(
     options: TryGetUserOptions
-  ): Promise<ViewModels.User | undefined> {
+  ): Promise<
+    | BaseResult.Success<ViewModels.User | undefined>
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
     let userFilter: IUserFilter = {};
 
-    switch (options.type) {
-      case "user": {
-        const { email, username } = options.user;
+    try {
+      switch (options.type) {
+        case "user": {
+          const { email, username } = options.user;
 
-        userFilter = {
-          filterType: "or",
-          email,
-          username,
-        };
-        break;
+          userFilter = {
+            filterType: "or",
+            email,
+            username,
+          };
+          break;
+        }
+        case "login": {
+          //  todo: add login case
+          break;
+        }
       }
-      case "login": {
-        //  todo: add login case
-        break;
-      }
+
+      const user = await this._userRepository.getUser(userFilter);
+
+      return ResultBuilder.success(user);
+    } catch (err) {
+      return ResultBuilder.fail(
+        new DbAccess.ErrorClass({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Error querying the database. Please try again later.",
+          cause: err,
+        })
+      );
     }
-
-    const user = await this._userRepository.getUser(userFilter);
-
-    return user;
   }
 }
 type TryGetUserOptions = WithUser | WithLogin;
