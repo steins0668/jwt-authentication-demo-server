@@ -4,18 +4,18 @@ import * as controllers from "./controllers";
 import { attachUserDataService } from "./middlewares";
 import { registerSchema } from "./schemas/register.schema";
 
-export const authRoutes = Router();
+export const AuthRoutes = Router();
 
-authRoutes.use(attachUserDataService);
+AuthRoutes.use(attachUserDataService);
 
-authRoutes.post(
+AuthRoutes.post(
   "/register",
   validateRequest(registerSchema),
   controllers.handleRegister
 );
 
-authRoutes.post("/sign-in", controllers.handleSignIn);
+AuthRoutes.post("/sign-in", controllers.handleSignIn);
 
-authRoutes.post("/sign-out", controllers.handleSignOut);
+AuthRoutes.post("/sign-out", controllers.handleSignOut);
 
-authRoutes.post("/refresh", controllers.handleRefresh);
+AuthRoutes.post("/refresh", controllers.handleRefresh);
