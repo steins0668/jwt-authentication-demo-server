@@ -22,7 +22,7 @@ export function validateRequest(
     const validationResult = schema.safeParse(req.body);
 
     if (!validationResult.success) {
-      res.status(404).json({ msg: z.prettifyError(validationResult.error) });
+      res.status(400).json({ msg: z.prettifyError(validationResult.error) });
       return;
     }
 
