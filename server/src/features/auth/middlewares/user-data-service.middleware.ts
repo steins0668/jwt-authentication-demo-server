@@ -10,6 +10,7 @@ export async function attachUserDataService(
   next: NextFunction
 ) {
   req.userDataService = await createUserDataService();
+  next();
 }
 
 declare global {
