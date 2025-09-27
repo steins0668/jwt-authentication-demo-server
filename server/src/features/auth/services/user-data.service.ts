@@ -2,6 +2,10 @@ import bcrypt from "bcrypt";
 import { createContext } from "../../../db/createContext";
 import { UserRepository, type IUserFilter } from "./repositories";
 import type { InsertModels, ViewModels } from "../types";
+import { ResultBuilder } from "../../../utils";
+import { Register } from "../error";
+import type { BaseResult } from "../../../types";
+import { DbAccess } from "../../../error";
 
 type NewUser = InsertModels.User;
 
@@ -26,14 +30,38 @@ export class UserDataService {
    * `UserRepository` with the `insertUser` method.
    * Hashes the `password` field first with `bcrypt` before inserting.
    * @param user - The `NewUser` entry to be inserted.
-   * @returns The `id` of the `NewUser` inserted, or `undefined` if the insertion failed.
+   * @returns A success object containing the `id` of the `NewUser` inserted, or a `fail` object
+   * containing the error class if the insertion failed.
    *
    * !note that the password is not hashed yet when the `NewUser` object is being passed to this method.
    */
-  public async insertUser(user: NewUser): Promise<number | undefined> {
+  public async insertUser(
+    user: NewUser
+  ): Promise<
+    | BaseResult.Success<number, "DB_INSERT">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    const getInsertErr = (err?: unknown) => {
+      return new DbAccess.ErrorClass({
+        name: "DB_ACCESS_INSERT_ERROR",
+        message:
+          "An error occured during database insertion on the `users` table. Please try again later.",
+        cause: err,
+      });
+    };
+
     user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
-    const insertedId = await this._userRepository.insertUser(user);
-    return insertedId;
+
+    try {
+      const insertedId = await this._userRepository.insertUser(user);
+
+      if (insertedId === undefined) throw getInsertErr();
+
+      return ResultBuilder.success(insertedId, "DB_INSERT");
+    } catch (err) {
+      const error = err instanceof DbAccess.ErrorClass ? err : getInsertErr();
+      return ResultBuilder.fail(error);
+    }
   }
 
   /**
