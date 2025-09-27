@@ -1,12 +1,14 @@
 {
   "dependencies": {
     "@libsql/client": "^0.15.15",
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "zod": "^4.1.11"
   },
   "scripts": {
     "dev": "nodemon",
@@ -18,6 +20,7 @@
     "db:push": "drizzle-kit push --config=./config/drizzle.config.ts"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",

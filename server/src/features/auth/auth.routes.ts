@@ -1,12 +1,21 @@
 import { Router } from "express";
+import { validateRequest } from "../../middlewares";
 import * as controllers from "./controllers";
+import { attachUserDataService } from "./middlewares";
+import { registerSchema } from "./schemas/register.schema";
 
-export const authRoutes = Router();
+export const AuthRoutes = Router();
 
-authRoutes.post("/register", controllers.handleRegister);
+AuthRoutes.use(attachUserDataService);
 
-authRoutes.post("/sign-in", controllers.handleSignIn);
+AuthRoutes.post(
+  "/register",
+  validateRequest(registerSchema),
+  controllers.handleRegister
+);
 
-authRoutes.post("/sign-out", controllers.handleSignOut);
+AuthRoutes.post("/sign-in", controllers.handleSignIn);
 
-authRoutes.post("/refresh", controllers.handleRefresh);
+AuthRoutes.post("/sign-out", controllers.handleSignOut);
+
+AuthRoutes.post("/refresh", controllers.handleRefresh);
