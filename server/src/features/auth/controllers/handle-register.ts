@@ -20,7 +20,7 @@ export async function handleRegister(
   }
 
   // inserting user
-  const inserted = await userDataService.insertUser(user);
+  const inserted = await userDataService.tryAddUser(user);
 
   // todo: add logging
   return inserted

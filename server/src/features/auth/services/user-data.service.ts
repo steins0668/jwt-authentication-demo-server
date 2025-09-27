@@ -25,7 +25,7 @@ export class UserDataService {
   /**
    * @public
    * @async
-   * @function insertUser
+   * @function tryAddUser
    * @description Asynchronously inserts a new user into the database through the
    * `UserRepository` with the `insertUser` method.
    * Hashes the `password` field first with `bcrypt` before inserting.
@@ -35,7 +35,7 @@ export class UserDataService {
    *
    * !note that the password is not hashed yet when the `NewUser` object is being passed to this method.
    */
-  public async insertUser(
+  public async tryAddUser(
     user: NewUser
   ): Promise<
     | BaseResult.Success<number, "DB_INSERT">
