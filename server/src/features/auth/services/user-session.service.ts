@@ -163,12 +163,10 @@ export class UserSessionService {
     | BaseResult.Success<number | undefined, "DB_DELETE">
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
-    const sessionNumberHash = HashUtil.byCrypto(sessionNumber);
-
     try {
       const deleteResult = await this._userSessionRepository.deleteSessions({
         scope: "user_session",
-        sessionNumberHash,
+        sessionNumberHash: HashUtil.byCrypto(sessionNumber),
       });
 
       const deletedId = deleteResult[0];
