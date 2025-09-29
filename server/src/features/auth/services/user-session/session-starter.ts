@@ -1,24 +1,15 @@
 import { randomUUID } from "crypto";
-import { createContext, TxContext } from "../../../../db/createContext";
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { SessionTokenRepository, UserSessionRepository } from "../repositories";
-
-export async function createUserSessionService() {
-  const dbContext = await createContext();
-  const sessionTokenRepo = new SessionTokenRepository(dbContext);
-  const userSessionRepo = new UserSessionRepository(dbContext);
-
-  return new UserSessionService(sessionTokenRepo, userSessionRepo);
-}
 
 /**
  * @class
  * @description Handles user session management from starting sessions, modifying
  * existing sessions, as well as ending sessions.
  */
-export class UserSessionService {
+export class SessionStarter {
   private readonly _sessionTokenRepository: SessionTokenRepository;
   private readonly _userSessionRepository: UserSessionRepository;
 
