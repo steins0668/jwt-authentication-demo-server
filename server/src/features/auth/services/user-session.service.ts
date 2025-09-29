@@ -56,19 +56,8 @@ export class UserSessionService {
   > {
     const { sessionNumber, userId, refreshToken, expiresAt } = sessionData;
 
-    const sessionHash = HashUtil.byCrypto(sessionNumber);
-    const tokenHash = HashUtil.byCrypto(refreshToken);
-
     const now = new Date();
     const nowISO = now.toISOString();
-
-    const userSession: InsertModels.UserSession = {
-      userId,
-      sessionHash,
-      createdAt: nowISO,
-      lastUsedAt: nowISO,
-      expiresAt: expiresAt?.toISOString() ?? null,
-    };
 
     const sessionRepo = this._userSessionRepository;
     const tokenRepo = this._sessionTokenRepository;
@@ -78,21 +67,26 @@ export class UserSessionService {
         //  create session
         const sessionId = await sessionRepo.insertSession({
           dbOrTx: tx,
-          userSession,
+          userSession: {
+            userId,
+            sessionHash: HashUtil.byCrypto(sessionNumber),
+            createdAt: nowISO,
+            lastUsedAt: nowISO,
+            expiresAt: expiresAt?.toISOString() ?? null,
+          },
         });
 
         if (sessionId === undefined)
           throw new Error("Failed creating session.");
 
-        const sessionToken: InsertModels.SessionToken = {
-          sessionId,
-          tokenHash,
-          createdAt: nowISO,
-        };
         //  store first refresh token
         const tokenId = await tokenRepo.insertToken({
           dbOrTx: tx,
-          sessionToken,
+          sessionToken: {
+            sessionId,
+            tokenHash: HashUtil.byCrypto(refreshToken),
+            createdAt: nowISO,
+          },
         });
 
         if (tokenId === undefined) throw new Error("Failed creating token.");
@@ -124,41 +118,36 @@ export class UserSessionService {
   > {
     const { sessionNumber, oldToken, newToken } = data;
 
-    const sessionHash = HashUtil.byCrypto(sessionNumber);
-    const oldTknHash = HashUtil.byCrypto(oldToken);
-    const newTknHash = HashUtil.byCrypto(newToken);
-
     const sessionRepo = this._userSessionRepository;
     const tokenRepo = this._sessionTokenRepository;
 
     try {
-      const updatedSessionId = await sessionRepo.execTransaction(async (tx) => {
+      const result = await sessionRepo.execTransaction(async (tx) => {
         //  updated last used for session
-        const sessionId = await sessionRepo.updateLastUsed({
+        const updatedId = await sessionRepo.updateLastUsed({
           dbOrTx: tx,
           queryBy: "session_hash",
-          sessionHash,
+          sessionHash: HashUtil.byCrypto(sessionNumber),
         });
 
-        if (sessionId === undefined)
+        if (updatedId === undefined)
           throw new Error("Failed updating session.");
 
         //  invalidate old token
         const result = await tokenRepo.invalidateTokens({
           dbOrTx: tx,
           queryBy: "token_hash",
-          tokenHash: oldTknHash,
+          tokenHash: HashUtil.byCrypto(oldToken),
         });
 
         if (result[0] === undefined)
           throw new Error("Failed invalidating old token.");
 
-        const now = new Date();
-        const nowISO = now.toISOString();
+        const newTknHash = HashUtil.byCrypto(newToken);
         const newTkn: InsertModels.SessionToken = {
-          sessionId,
+          sessionId: updatedId,
           tokenHash: newTknHash,
-          createdAt: nowISO,
+          createdAt: new Date().toISOString(),
         };
 
         const usedTokens = await tokenRepo.getTokens({
@@ -180,10 +169,10 @@ export class UserSessionService {
         if (newTknId === undefined)
           throw new Error("Failed creating new token.");
 
-        return sessionId;
+        return updatedId;
       });
 
-      return ResultBuilder.success(updatedSessionId, "DB_UPDATE");
+      return ResultBuilder.success(result, "DB_UPDATE");
     } catch (err) {
       const error: DbAccess.ErrorClass = {
         name: "DB_ACCESS_INSERT_ERROR",
