@@ -79,6 +79,7 @@ export class UserSessionService {
 
     try {
       const result = await sessionRepo.execTransaction(async (tx) => {
+        //  create session
         const sessionId = await sessionRepo.tryInsertSession({
           dbOrTx: tx,
           userSession,
@@ -91,6 +92,7 @@ export class UserSessionService {
           tokenHash,
           createdAt: nowISO,
         };
+        //  store first refresh token
         const tokenId = await tokenRepo.tryInsertToken({
           dbOrTx: tx,
           sessionToken,
@@ -117,14 +119,13 @@ export class UserSessionService {
   //    todo: add docs
   public async tryUpdateSession(data: {
     sessionNumber: string;
-    userId: number;
     oldToken: string;
     newToken: string;
   }): Promise<
     | BaseResult.Success<number, "DB_UPDATE">
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
-    const { sessionNumber, userId, oldToken, newToken } = data;
+    const { sessionNumber, oldToken, newToken } = data;
 
     const sessionHash = HashUtil.byCrypto(sessionNumber);
     const oldTknHash = HashUtil.byCrypto(oldToken);
@@ -135,14 +136,18 @@ export class UserSessionService {
 
     try {
       const updatedSessionId = await sessionRepo.execTransaction(async (tx) => {
+        //  updated last used for session
         const sessionId = await sessionRepo.tryUpdateLastUsed({
+          dbOrTx: tx,
           queryBy: "session_hash",
           sessionHash,
         });
 
         if (!sessionId) throw new Error("Failed updating session.");
 
+        //  invalidate old token
         const invalidTknId = await tokenRepo.tryInvalidateTokens({
+          dbOrTx: tx,
           queryBy: "token_hash",
           tokenHash: oldTknHash,
         });
@@ -157,6 +162,7 @@ export class UserSessionService {
           createdAt: nowISO,
         };
 
+        //  add new token
         const newTknId = await tokenRepo.tryInsertToken({
           dbOrTx: tx,
           sessionToken: newTkn,
@@ -177,16 +183,6 @@ export class UserSessionService {
 
       return ResultBuilder.fail(error);
     }
-
-    // const updatedSessionId =
-    //   await this._userSessionRepository.tryUpdateSessionToken({
-    //     sessionNumberHash: HashUtil.byCrypto(sessionNumber),
-    //     userId,
-    //     oldTokenHash: HashService.cryptoHash(oldToken),
-    //     newTokenHash: HashService.cryptoHash(newToken),
-    //   });
-
-    // return updatedSessionId;
   }
 
   /**
