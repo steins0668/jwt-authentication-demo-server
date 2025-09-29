@@ -1,9 +1,11 @@
 import { randomUUID } from "crypto";
 import { createContext, DbContext } from "../../../db/createContext";
 import { HashUtil, ResultBuilder } from "../../../utils";
-import { InsertModels } from "../types";
+import { InsertModels, ViewModels } from "../types";
 import { SessionTokenRepository, UserSessionRepository } from "./repositories";
 import { UserSession } from "../../../models";
+import { BaseResult } from "../../../types";
+import { DbAccess } from "../../../error";
 
 export async function createUserSessionService() {
   const dbContext = await createContext();
@@ -46,30 +48,16 @@ export class UserSessionService {
     return sessionNumber;
   }
 
-  /**
-   * @public
-   * @async
-   * @function tryStartNewSession
-   * @description Asynchronously attempts to start a new session for the user with
-   * the provided `userId` and `refreshToken`. Optionally sets an expiry date for the
-   * session with the `expiresAt` field.
-   * Both the `sessionNumber` and `refreshToken` will be hashed before storing in the
-   * database.
-   * @param sessionData Contains the following fields:
-   * - `sessionNumber` - The new session's unique session number identifier.
-   * - `userId` - The user linked to the new session.
-   * - `refreshToken` - The refresh token that will be hashed and stored to the database.
-   * - `expiresAt` - An optional field specifying the expiry `Date` of the session.
-   * Setting it will cause the session to be persistent.
-   * @returns A `Promise` that resolves to the id of the new created session or `null`
-   * if if the session creation fails.
-   */
+  //  todo: add docs
   public async tryStartNewSession(sessionData: {
     sessionNumber: string;
     userId: number;
     refreshToken: string;
     expiresAt?: Date | null;
-  }): Promise<number | null> {
+  }): Promise<
+    | BaseResult.Success<number, "DB_INSERT">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
     const { sessionNumber, userId, refreshToken, expiresAt } = sessionData;
 
     const sessionHash = HashUtil.byCrypto(sessionNumber);
@@ -78,7 +66,7 @@ export class UserSessionService {
     const now = new Date();
     const nowISO = now.toISOString();
 
-    const session: InsertModels.UserSession = {
+    const userSession: InsertModels.UserSession = {
       userId,
       sessionHash,
       createdAt: nowISO,
@@ -86,65 +74,119 @@ export class UserSessionService {
       expiresAt: expiresAt?.toISOString() ?? null,
     };
 
-    this._dbContext.transaction(async (tx) => {
-      await tx.insert(UserSession).values([session]);
-    });
+    const sessionRepo = this._userSessionRepository;
+    const tokenRepo = this._sessionTokenRepository;
 
-    // const sessionId = await this._userSessionRepository.tryInsertSession(
-    //   session
-    // );
+    try {
+      const result = await sessionRepo.execTransaction(async (tx) => {
+        const sessionId = await sessionRepo.tryInsertSession({
+          dbOrTx: tx,
+          userSession,
+        });
 
-    // if (sessionId) {
-    //   const sessionToken: InsertModels.SessionToken = {
-    //     sessionId,
-    //     tokenHash,
-    //     createdAt: nowISO,
-    //   };
+        if (!sessionId) throw new Error("Failed creating session.");
 
-    //   const tokenId = await this._sessionTokenRepository.tryInsertToken(
-    //     sessionToken
-    //   );
+        const sessionToken: InsertModels.SessionToken = {
+          sessionId,
+          tokenHash,
+          createdAt: nowISO,
+        };
+        const tokenId = await tokenRepo.tryInsertToken({
+          dbOrTx: tx,
+          sessionToken,
+        });
 
-    //   if (tokenId) {
-    //   }
-    // }
+        if (!tokenId) throw new Error("Failed creating token.");
 
-    // return sessionId;
+        return sessionId;
+      });
+
+      return ResultBuilder.success(result, "DB_INSERT");
+    } catch (err) {
+      const error: DbAccess.ErrorClass = {
+        name: "DB_ACCESS_INSERT_ERROR",
+        message:
+          "An error occured while creating session. Please try again later.",
+        cause: err,
+      };
+
+      return ResultBuilder.fail(error);
+    }
   }
 
-  /**
-   * @public
-   * @async
-   * @function tryUpdateSession
-   * @description Asynchronously attempts to update the session's refresh token.
-   * Hashes the `sessionNumber`, `oldToken`, and `newToken` fields before proceeding to the repository
-   * layer.
-   * ! sessionNumber and userId are only used for logging, not validation.
-   * @param data.sessionNumber The unique `sessionNumber` identifier of the `session` that will be updated.
-   * @param data.userId The `id` of the `user` whose `session` will be updated.
-   * @param data.oldToken The token that will be rotated out. Its hash will be the primary means
-   * of validation.
-   * @param data.newToken The token that will replace the old token.
-   * @returns A `Promise` that resolves to the id of the updated session, or `null` if the
-   * session update fails.
-   */
+  //    todo: add docs
   public async tryUpdateSession(data: {
     sessionNumber: string;
     userId: number;
     oldToken: string;
     newToken: string;
-  }): Promise<number | null> {
+  }): Promise<
+    | BaseResult.Success<number, "DB_UPDATE">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
     const { sessionNumber, userId, oldToken, newToken } = data;
 
-    const updatedSessionId =
-      await this._userSessionRepository.tryUpdateSessionToken({
-        sessionNumberHash: HashService.cryptoHash(sessionNumber),
-        userId,
-        oldTokenHash: HashService.cryptoHash(oldToken),
-        newTokenHash: HashService.cryptoHash(newToken),
+    const sessionHash = HashUtil.byCrypto(sessionNumber);
+    const oldTknHash = HashUtil.byCrypto(oldToken);
+    const newTknHash = HashUtil.byCrypto(newToken);
+
+    const sessionRepo = this._userSessionRepository;
+    const tokenRepo = this._sessionTokenRepository;
+
+    try {
+      const updatedSessionId = await sessionRepo.execTransaction(async (tx) => {
+        const sessionId = await sessionRepo.tryUpdateLastUsed({
+          queryBy: "session_hash",
+          sessionHash,
+        });
+
+        if (!sessionId) throw new Error("Failed updating session.");
+
+        const invalidTknId = await tokenRepo.tryInvalidateTokens({
+          queryBy: "token_hash",
+          tokenHash: oldTknHash,
+        });
+
+        if (!invalidTknId) throw new Error("Failed invalidating old token.");
+
+        const now = new Date();
+        const nowISO = now.toISOString();
+        const newTkn: InsertModels.SessionToken = {
+          sessionId,
+          tokenHash: newTknHash,
+          createdAt: nowISO,
+        };
+
+        const newTknId = await tokenRepo.tryInsertToken({
+          dbOrTx: tx,
+          sessionToken: newTkn,
+        });
+
+        if (!newTknId) throw new Error("Failed creating new token.");
+
+        return sessionId;
       });
 
-    return updatedSessionId;
+      return ResultBuilder.success(updatedSessionId, "DB_UPDATE");
+    } catch (err) {
+      const error: DbAccess.ErrorClass = {
+        name: "DB_ACCESS_INSERT_ERROR",
+        message: "Failed updating session.",
+        cause: err,
+      };
+
+      return ResultBuilder.fail(error);
+    }
+
+    // const updatedSessionId =
+    //   await this._userSessionRepository.tryUpdateSessionToken({
+    //     sessionNumberHash: HashUtil.byCrypto(sessionNumber),
+    //     userId,
+    //     oldTokenHash: HashService.cryptoHash(oldToken),
+    //     newTokenHash: HashService.cryptoHash(newToken),
+    //   });
+
+    // return updatedSessionId;
   }
 
   /**
@@ -157,18 +199,32 @@ export class UserSessionService {
    * @returns A `Promise` resolving to the `id` of the deleted session, or `null` if the
    * operation fails.
    */
-  public async tryEndSession(sessionNumber: string): Promise<number | null> {
-    const sessionNumberHash = HashService.cryptoHash(sessionNumber);
+  public async tryEndSession(
+    sessionNumber: string
+  ): Promise<
+    | BaseResult.Success<number | undefined, "DB_DELETE">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    const sessionNumberHash = HashUtil.byCrypto(sessionNumber);
 
-    const deletedSessionId =
-      (
-        await this._userSessionRepository.tryDeleteSession({
-          scope: "user_session",
-          sessionNumberHash,
-        })
-      )?.[0] ?? null;
+    try {
+      const deleteResult = await this._userSessionRepository.tryDeleteSessions({
+        scope: "user_session",
+        sessionNumberHash,
+      });
 
-    return deletedSessionId;
+      const deletedId = deleteResult[0];
+
+      return ResultBuilder.success(deletedId, "DB_DELETE");
+    } catch (err) {
+      const error: DbAccess.ErrorClass = {
+        name: "DB_ACCESS_QUERY_ERROR",
+        message: "Failed deleting session. Please try again later.",
+        cause: err,
+      };
+
+      return ResultBuilder.fail(error);
+    }
   }
 
   /**
@@ -179,13 +235,25 @@ export class UserSessionService {
    * @returns A `Promise` that resolves to an array of `number`s representing
    * the deleted session ids or `null` if the delete operation fails.
    */
-  public async endIdleSessions(): Promise<number[] | null> {
-    const deletedSessionIds =
-      await this._userSessionRepository.tryDeleteSession({
-        scope: "idle_session",
-      });
+  public async endIdleSessions(): Promise<
+    | BaseResult.Success<number[], "DB_DELETE">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    try {
+      const deletedSessionIds =
+        await this._userSessionRepository.tryDeleteSessions({
+          scope: "idle_session",
+        });
 
-    return deletedSessionIds;
+      return ResultBuilder.success(deletedSessionIds, "DB_DELETE");
+    } catch (err) {
+      const error: DbAccess.ErrorClass = {
+        name: "DB_ACCESS_QUERY_ERROR",
+        message: "Failed deleting idle sessions.",
+        cause: err,
+      };
+      return ResultBuilder.fail(error);
+    }
   }
 
   /**
@@ -197,12 +265,24 @@ export class UserSessionService {
    * @returns A `Promise` that resolves to an array of `number`s representing
    * the deleted session ids or `null` if the delete operation fails.
    */
-  public async endExpiredSessions(): Promise<number[] | null> {
-    const deletedSessionIds =
-      await this._userSessionRepository.tryDeleteSession({
-        scope: "expired_persistent",
-      });
+  public async endExpiredSessions(): Promise<
+    | BaseResult.Success<number[], "DB_DELETE">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    try {
+      const deletedSessionIds =
+        await this._userSessionRepository.tryDeleteSessions({
+          scope: "expired_persistent",
+        });
 
-    return deletedSessionIds;
+      return ResultBuilder.success(deletedSessionIds, "DB_DELETE");
+    } catch (err) {
+      const error: DbAccess.ErrorClass = {
+        name: "DB_ACCESS_QUERY_ERROR",
+        message: "Failed deleting idle sessions.",
+        cause: err,
+      };
+      return ResultBuilder.fail(error);
+    }
   }
 }
