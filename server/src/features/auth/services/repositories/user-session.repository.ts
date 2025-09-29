@@ -45,6 +45,28 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     super(context, UserSession);
   }
 
+  public async tryGetSession(
+    queryOptions: {
+      isAscending?: boolean;
+      pageSize?: number;
+      pageNumber?: number;
+    } & QueryOptions
+  ): Promise<ViewModels.UserSession[]> {
+    const { queryBy } = queryOptions;
+    const whereClause =
+      queryBy === "session_hash"
+        ? eq(UserSession.sessionHash, queryOptions.sessionHash)
+        : eq(UserSession.sessionId, queryOptions.sessionId);
+
+    const sessions = await this.GetRows({
+      column: UserSession.userId,
+      whereClause,
+      ...queryOptions,
+    });
+
+    return sessions;
+  }
+
   /**
    * @public
    * @async
