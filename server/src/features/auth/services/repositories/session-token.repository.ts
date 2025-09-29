@@ -29,7 +29,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   public async tryInsertToken(
     token: InsertModels.SessionToken
   ): Promise<number | undefined> {
-    const inserted = await this.insertRow(token);
+    const inserted = await this.insertRow({ value: token });
     return inserted?.tokenId;
   }
 
