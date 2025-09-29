@@ -9,7 +9,7 @@ import { SessionTokenRepository, UserSessionRepository } from "../repositories";
  * @description Handles user session management from starting sessions, modifying
  * existing sessions, as well as ending sessions.
  */
-export class SessionStarter {
+export class SessionStartegr {
   private readonly _sessionTokenRepository: SessionTokenRepository;
   private readonly _userSessionRepository: UserSessionRepository;
 
