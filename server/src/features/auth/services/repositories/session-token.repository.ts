@@ -30,7 +30,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
 
   public async tryGetTokens(
     queryOptions: {
-      isAscending: boolean;
+      isAscending?: boolean;
       pageSize?: number;
       pageNumber?: number;
     } & QueryOptions
