@@ -71,9 +71,9 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @public
    * @async
    * @function tryInsertSession
-   * @description Asynchronously attempts to insert a {@link InsertModels.UserSession}
-   * object into {@link Tables.UserSession}.
-   * @param session - The {@link InsertModels.UserSession} object to be inserted.
+   * @description Asynchronously attempts to insert a `UserSession`
+   * object into `user_sessions` table.
+   * @param session - The `UserSession` object to be inserted.
    * @returns A `Promise` that resolves to the `sessionId` or `undefined` if the insert
    * operation fails.
    */
