@@ -45,48 +45,14 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @description Asynchronously attempts to insert a {@link InsertModels.UserSession}
    * object into {@link Tables.UserSession}.
    * @param session - The {@link InsertModels.UserSession} object to be inserted.
-   * @returns A `Promise` that resolves a {@link BaseResult.Success} object containing
-   * the `sessionId` of the inserted `UserSession`.
+   * @returns A `Promise` that resolves to the `sessionId` or `undefined` if the insert
+   * operation fails.
    */
   public async tryInsertSession(
     session: InsertModels.UserSession
-  ): Promise<
-    | BaseResult.Success<number, "DB_INSERT">
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
-    const getInsertErr = (message: string, err?: unknown) => {
-      //  Error class creation helper
-      return new DbAccess.ErrorClass({
-        name: "DB_ACCESS_INSERT_ERROR",
-        message,
-        cause: err,
-      });
-    };
-
-    try {
-      DbLogger.info(`[UserSession] Attempting to insert new user session...`);
-
-      const inserted = await this.insertRow(session);
-
-      if (inserted) {
-        DbLogger.info(
-          `[UserSession] User session successfully inserted with id: ${inserted.sessionId}`
-        );
-        return ResultBuilder.success(inserted.sessionId, "DB_INSERT");
-      } else {
-        const msg = "Failed inserting user session due to conflict.";
-        DbLogger.warn(`[UserSession] ${msg}`);
-
-        const error = getInsertErr(msg);
-        return ResultBuilder.fail(error);
-      }
-    } catch (err) {
-      const msg = "Insert operation failed.";
-      DbLogger.error(`[UserSession] ${msg}`, err);
-
-      const error = getInsertErr(msg, err);
-      return ResultBuilder.fail(error);
-    }
+  ): Promise<number | undefined> {
+    const inserted = await this.insertRow(session);
+    return inserted?.sessionId;
   }
 
   //   /**
@@ -165,12 +131,9 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @returns A `Promise` that resolves to an array of numbers if the delete operation
    * ran successfully or `null` if it failed.
    */
-  public async tryDeleteSession(
+  public async tryDeleteSessions(
     deleteTarget: DeleteTarget
-  ): Promise<
-    | BaseResult.Success<number[], "DB_DELETE">
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
+  ): Promise<number[]> {
     const { scope } = deleteTarget;
     const operationScope =
       scope === "user_session"
@@ -181,34 +144,15 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
         ? `idle sessions.`
         : `expired persistent sessions.`;
 
-    try {
-      DbLogger.info(
-        `[UserSession] Attempting to delete session/s with ${operationScope}`
-      );
+    const deleteCondition = this.getSessionDeleteCondition(deleteTarget);
 
-      const deleteCondition = this.getSessionDeleteCondition(deleteTarget);
+    const deletedIds = await this._dbContext
+      .delete(UserSession)
+      .where(deleteCondition)
+      .returning()
+      .then((result) => result.map((session) => session.sessionId));
 
-      const deletedIds = await this._dbContext
-        .delete(UserSession)
-        .where(deleteCondition)
-        .returning()
-        .then((result) => result.map((session) => session.sessionId));
-
-      DbLogger.info(`[UserSession] Deleted session/s: `, deletedIds);
-
-      return ResultBuilder.success(deletedIds, "DB_DELETE");
-    } catch (err) {
-      const msg = `Failed deleting session/s with ${operationScope}.`;
-      DbLogger.error(`[UserSession] ${msg}`, err);
-
-      const error = new DbAccess.ErrorClass({
-        name: "DB_ACCESS_QUERY_ERROR",
-        message: msg,
-        cause: err,
-      });
-
-      return ResultBuilder.fail(error);
-    }
+    return deletedIds;
   }
 
   /**
