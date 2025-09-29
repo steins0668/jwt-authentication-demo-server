@@ -1,17 +1,12 @@
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { SessionTokenRepository, UserSessionRepository } from "../repositories";
+import { UserSessionRepository } from "../repositories";
 
 export class SessionCleanupService {
-  private readonly _sessionTokenRepository: SessionTokenRepository;
   private readonly _userSessionRepository: UserSessionRepository;
 
-  constructor(
-    sessionTokenRepository: SessionTokenRepository,
-    userSessionTokenRepository: UserSessionRepository
-  ) {
-    this._sessionTokenRepository = sessionTokenRepository;
+  constructor(userSessionTokenRepository: UserSessionRepository) {
     this._userSessionRepository = userSessionTokenRepository;
   }
 
