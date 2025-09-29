@@ -5,7 +5,7 @@ export const SessionToken = sqliteTable("session_tokens", {
   tokenId: integer("token_id").primaryKey({ autoIncrement: true }),
   sessionId: integer("session_id")
     .notNull()
-    .references(() => UserSession.sessionId),
+    .references(() => UserSession.sessionId, { onDelete: "cascade" }),
   tokenHash: text("token_hash").unique().notNull(),
   createdAt: text("created_at").notNull(),
   expiresAt: text("expires_at"),
