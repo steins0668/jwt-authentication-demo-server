@@ -1,9 +1,8 @@
 import { asc, desc, SQL } from "drizzle-orm";
-import { SQLiteTable } from "drizzle-orm/sqlite-core";
-
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
-import type { DbContext } from "../db/createContext";
+import type { DbContext, TxContext } from "../db/createContext";
 
 export abstract class Repository<
   TTable extends SQLiteTable,
@@ -26,12 +25,15 @@ export abstract class Repository<
    * @param newRow - The new row to be inserted.
    * @returns The inserted object if successful or `undefined` if the insert operation fails.
    */
-  protected async insertRow(
-    newRow: TInsertModel
-  ): Promise<TSelectResult | undefined> {
-    const inserted = await this._dbContext
+  protected async insertRow(options: {
+    dbOrTx?: DbContext | TxContext;
+    value: TInsertModel;
+  }): Promise<TSelectResult | undefined> {
+    const { dbOrTx = this._dbContext, value } = options;
+
+    const inserted = await dbOrTx
       .insert(this._table)
-      .values([newRow])
+      .values([value])
       .onConflictDoNothing()
       .returning()
       .then((result) => result[0]);
@@ -48,12 +50,13 @@ export abstract class Repository<
    * @returns A promise that resolves to a typed row (`TResult`) or null if no row is found
    * or an error results while querying the database.
    */
-  protected async GetFirst(options?: {
+  protected async GetFirst(options: {
+    dbOrTx?: DbContext | TxContext;
     whereClause?: SQL | undefined;
   }): Promise<TSelectResult | undefined> {
-    const whereClause = options?.whereClause;
+    const { dbOrTx = this._dbContext, whereClause } = options;
 
-    const result = await this._dbContext
+    const result = await dbOrTx
       .select()
       .from(this._table)
       .where(whereClause)
@@ -88,21 +91,30 @@ export abstract class Repository<
    * // Retrieves items 11–20 of projects where LanguageId = 1, ordered by ProjectId ascending.
    */
   protected async GetRows(options: {
+    dbOrTx?: DbContext | TxContext;
     column: AnySQLiteColumn;
     isAscending?: boolean | undefined;
     pageSize?: number | undefined;
     pageNumber?: number | undefined;
     whereClause?: SQL | undefined;
   }): Promise<TSelectResult[]> {
-    const column = options.column;
-    const isAscending = options.isAscending ?? true;
-    const whereClause = options.whereClause;
-    const pageSize = options.pageSize ?? 100;
-    const pageNumber = options.pageNumber ?? 1;
+    const {
+      dbOrTx = this._dbContext,
+      column,
+      isAscending = true,
+      whereClause,
+      pageSize = 100,
+      pageNumber = 1,
+    } = options;
+    // const column = options.column;
+    // const isAscending = options.isAscending ?? true;
+    // const whereClause = options.whereClause;
+    // const pageSize = options.pageSize ?? 100;
+    // const pageNumber = options.pageNumber ?? 1;
 
     const order = isAscending ? asc(column) : desc(column);
 
-    const rows = await this._dbContext
+    const rows = await dbOrTx
       .select()
       .from(this._table)
       .where(whereClause)
