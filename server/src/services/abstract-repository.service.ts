@@ -16,6 +16,13 @@ export abstract class Repository<
     this._dbContext = context;
     this._table = table;
   }
+
+  protected async execTransaction<T>(
+    fn: (tx: DbContext | TxContext) => Promise<T>
+  ): Promise<T> {
+    return this._dbContext.transaction(async (tx) => fn(tx));
+  }
+
   /**
    * @protected
    * @async
