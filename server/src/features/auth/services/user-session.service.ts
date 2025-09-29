@@ -1,18 +1,17 @@
 import { randomUUID } from "crypto";
-import { createContext, DbContext } from "../../../db/createContext";
-import { HashUtil, ResultBuilder } from "../../../utils";
-import { InsertModels, ViewModels } from "../types";
-import { SessionTokenRepository, UserSessionRepository } from "./repositories";
-import { UserSession } from "../../../models";
-import { BaseResult } from "../../../types";
+import { createContext } from "../../../db/createContext";
 import { DbAccess } from "../../../error";
+import { BaseResult } from "../../../types";
+import { HashUtil, ResultBuilder } from "../../../utils";
+import { InsertModels } from "../types";
+import { SessionTokenRepository, UserSessionRepository } from "./repositories";
 
 export async function createUserSessionService() {
   const dbContext = await createContext();
   const sessionTokenRepo = new SessionTokenRepository(dbContext);
   const userSessionRepo = new UserSessionRepository(dbContext);
 
-  return new UserSessionService(dbContext, sessionTokenRepo, userSessionRepo);
+  return new UserSessionService(sessionTokenRepo, userSessionRepo);
 }
 
 /**
@@ -21,16 +20,13 @@ export async function createUserSessionService() {
  * existing sessions, as well as ending sessions.
  */
 export class UserSessionService {
-  private readonly _dbContext: DbContext;
   private readonly _sessionTokenRepository: SessionTokenRepository;
   private readonly _userSessionRepository: UserSessionRepository;
 
   public constructor(
-    dbContext: DbContext,
     sessionTokenRepository: SessionTokenRepository,
     userSessionRepository: UserSessionRepository
   ) {
-    this._dbContext = dbContext;
     this._sessionTokenRepository = sessionTokenRepository;
     this._userSessionRepository = userSessionRepository;
   }
