@@ -98,7 +98,7 @@ export abstract class Repository<
    * // Retrieves items 11–20 of projects where LanguageId = 1, ordered by ProjectId ascending.
    */
   protected async GetRows(options: {
-    dbOrTx?: DbContext | TxContext;
+    dbOrTx?: DbContext | TxContext | undefined;
     column: AnySQLiteColumn;
     isAscending?: boolean | undefined;
     pageSize?: number | undefined;
