@@ -1,5 +1,5 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
-import { DbContext } from "../../../../db/createContext";
+import { DbContext, TxContext } from "../../../../db/createContext";
 import { UserSession } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, ViewModels, Tables } from "../../types";
@@ -73,14 +73,19 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @function tryInsertSession
    * @description Asynchronously attempts to insert a `UserSession`
    * object into `user_sessions` table.
-   * @param session - The `UserSession` object to be inserted.
+   * @param dbOrTx - An optional field for transaction handling.
+   * @param userSession - The `UserSession` object to be inserted.
    * @returns A `Promise` that resolves to the `sessionId` or `undefined` if the insert
    * operation fails.
    */
-  public async tryInsertSession(
-    session: InsertModels.UserSession
-  ): Promise<number | undefined> {
-    const inserted = await this.insertRow(session);
+  public async tryInsertSession({
+    dbOrTx,
+    userSession,
+  }: {
+    dbOrTx?: DbContext | TxContext | undefined;
+    userSession: InsertModels.UserSession;
+  }): Promise<number | undefined> {
+    const inserted = await this.insertRow({ dbOrTx, value: userSession });
     return inserted?.sessionId;
   }
 
