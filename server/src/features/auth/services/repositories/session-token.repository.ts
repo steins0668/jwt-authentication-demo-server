@@ -19,7 +19,9 @@ type TokenHash = {
   tokenHash: string;
 };
 
-type QueryOptions = TokenId | SessionId | TokenHash;
+type QueryOptions = {
+  dbOrTx?: DbContext | TxContext | undefined;
+} & (TokenId | SessionId | TokenHash);
 
 export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   public constructor(context: DbContext) {
@@ -59,8 +61,9 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     queryOptions: QueryOptions
   ): Promise<ViewModels.SessionToken[]> {
     const whereClause = this.getWhereClause(queryOptions);
+    const { dbOrTx = this._dbContext } = queryOptions;
 
-    const updatedTokens = await this._dbContext
+    const updatedTokens = await dbOrTx
       .update(SessionToken)
       .set({
         isUsed: true,
