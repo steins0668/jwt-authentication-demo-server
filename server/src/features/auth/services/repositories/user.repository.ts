@@ -23,7 +23,7 @@ export class UserRepository extends Repository<Tables.Users> {
    * @returns - The {@link User.userId} if the insert operation is successful, `undefined` otherwise.
    */
   public async insertUser(user: NewUser): Promise<number | undefined> {
-    const inserted = await this.insertRow(user);
+    const inserted = await this.insertRow({ value: user });
     return inserted?.userId;
   }
   /**
