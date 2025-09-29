@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { createContext } from "../../../db/createContext";
+import { createContext, TxContext } from "../../../db/createContext";
 import { DbAccess } from "../../../error";
 import { BaseResult } from "../../../types";
 import { HashUtil, ResultBuilder } from "../../../utils";
@@ -58,9 +58,7 @@ export class UserSessionService {
 
     const now = new Date();
     const nowISO = now.toISOString();
-
     const sessionRepo = this._userSessionRepository;
-    const tokenRepo = this._sessionTokenRepository;
 
     try {
       const result = await sessionRepo.execTransaction(async (tx) => {
@@ -80,16 +78,11 @@ export class UserSessionService {
           throw new Error("Failed creating session.");
 
         //  store first refresh token
-        const tokenId = await tokenRepo.insertToken({
-          dbOrTx: tx,
-          sessionToken: {
-            sessionId,
-            tokenHash: HashUtil.byCrypto(refreshToken),
-            createdAt: nowISO,
-          },
+        await this.insertToken({
+          tx,
+          sessionId,
+          tokenHash: HashUtil.byCrypto(refreshToken),
         });
-
-        if (tokenId === undefined) throw new Error("Failed creating token.");
 
         return sessionId;
       });
@@ -118,59 +111,29 @@ export class UserSessionService {
   > {
     const { sessionNumber, oldToken, newToken } = data;
 
-    const sessionRepo = this._userSessionRepository;
-    const tokenRepo = this._sessionTokenRepository;
-
     try {
-      const result = await sessionRepo.execTransaction(async (tx) => {
-        //  updated last used for session
-        const updatedId = await sessionRepo.updateLastUsed({
-          dbOrTx: tx,
-          queryBy: "session_hash",
-          sessionHash: HashUtil.byCrypto(sessionNumber),
-        });
+      const result = await this._userSessionRepository.execTransaction(
+        async (tx) => {
+          //  updated last used for session
+          const updatedId = await this.updateLastUsed({ tx, sessionNumber });
 
-        if (updatedId === undefined)
-          throw new Error("Failed updating session.");
+          //  invalidate old token
+          await this.invalidateToken({ tx, oldToken });
 
-        //  invalidate old token
-        const result = await tokenRepo.invalidateTokens({
-          dbOrTx: tx,
-          queryBy: "token_hash",
-          tokenHash: HashUtil.byCrypto(oldToken),
-        });
+          const newTknHash = HashUtil.byCrypto(newToken);
 
-        if (result[0] === undefined)
-          throw new Error("Failed invalidating old token.");
+          await this.ensureTokenUnused({ tx, tknHash: newTknHash });
 
-        const newTknHash = HashUtil.byCrypto(newToken);
-        const newTkn: InsertModels.SessionToken = {
-          sessionId: updatedId,
-          tokenHash: newTknHash,
-          createdAt: new Date().toISOString(),
-        };
+          //  add new token
+          await this.insertToken({
+            tx,
+            sessionId: updatedId,
+            tokenHash: newTknHash,
+          });
 
-        const usedTokens = await tokenRepo.getTokens({
-          dbOrTx: tx,
-          queryBy: "token_hash",
-          tokenHash: newTknHash,
-        });
-
-        //  todo: add fallback behavior to this (delete/logout all sessions)
-        if (usedTokens.some((token) => token.isUsed))
-          throw new Error("Token already used!!");
-
-        //  add new token
-        const newTknId = await tokenRepo.insertToken({
-          dbOrTx: tx,
-          sessionToken: newTkn,
-        });
-
-        if (newTknId === undefined)
-          throw new Error("Failed creating new token.");
-
-        return updatedId;
-      });
+          return updatedId;
+        }
+      );
 
       return ResultBuilder.success(result, "DB_UPDATE");
     } catch (err) {
@@ -279,5 +242,88 @@ export class UserSessionService {
       };
       return ResultBuilder.fail(error);
     }
+  }
+  //#region updateSession helpers
+  /**
+   * Update `lastUsed` field for session with the matching hash of the provided
+   * `sessionNumber`.
+   * @param options
+   * @returns
+   */
+  private async updateLastUsed(options: {
+    tx: TxContext;
+    sessionNumber: string;
+  }): Promise<number> {
+    //  updated last used for session
+    const updatedId = await this._userSessionRepository.updateLastUsed({
+      dbOrTx: options.tx,
+      queryBy: "session_hash",
+      sessionHash: HashUtil.byCrypto(options.sessionNumber),
+    });
+
+    if (updatedId === undefined) throw new Error("Failed updating session.");
+
+    return updatedId;
+  }
+
+  /**
+   * Invalidate the provided token string if found in the database by
+   * setting the `isUsed` field to `true`.
+   * @param options
+   */
+  private async invalidateToken(options: {
+    tx: TxContext;
+    oldToken: string;
+  }): Promise<void> {
+    await this._sessionTokenRepository.invalidateTokens({
+      dbOrTx: options.tx,
+      queryBy: "token_hash",
+      tokenHash: HashUtil.byCrypto(options.oldToken),
+    });
+  }
+
+  /**
+   * Get the stored tokens in the database matching the provided hash.
+   * If one of them has the `isUsed` field set to `true`, throw an error.
+   * @param options
+   */
+  private async ensureTokenUnused(options: {
+    tx: TxContext;
+    tknHash: string;
+  }): Promise<void> {
+    const usedTokens = await this._sessionTokenRepository.getTokens({
+      dbOrTx: options.tx,
+      queryBy: "token_hash",
+      tokenHash: options.tknHash,
+    });
+
+    //  todo: add fallback behavior to this (delete/logout all sessions)
+    if (usedTokens.some((token) => token.isUsed))
+      throw new Error("Token already used!!");
+  }
+  //#endregion
+
+  /**
+   * @description Insert a new token with the provided `sessionId` and `tokenHash`.
+   * Automatically generates a new date ISO string for the `createdAt` field.
+   * @throws `Error` if the the token creation failed.
+   * @param options
+   */
+  private async insertToken(options: {
+    tx: TxContext;
+    sessionId: number;
+    tokenHash: string;
+  }): Promise<number> {
+    const newTknId = await this._sessionTokenRepository.insertToken({
+      dbOrTx: options.tx,
+      sessionToken: {
+        ...options,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    if (newTknId === undefined) throw new Error("Failed creating new token.");
+
+    return newTknId;
   }
 }
