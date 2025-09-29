@@ -17,7 +17,7 @@ export abstract class Repository<
     this._table = table;
   }
 
-  protected async execTransaction<T>(
+  public async execTransaction<T>(
     fn: (tx: DbContext | TxContext) => Promise<T>
   ): Promise<T> {
     return this._dbContext.transaction(async (tx) => fn(tx));
