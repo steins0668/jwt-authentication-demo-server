@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { DbContext } from "../../../../db/createContext";
+import { DbContext, TxContext } from "../../../../db/createContext";
 import { SessionToken } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, ViewModels, Tables } from "../../types";
@@ -26,10 +26,14 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     super(context, SessionToken);
   }
 
-  public async tryInsertToken(
-    token: InsertModels.SessionToken
-  ): Promise<number | undefined> {
-    const inserted = await this.insertRow({ value: token });
+  public async tryInsertToken({
+    dbOrTx,
+    sessionToken,
+  }: {
+    dbOrTx: DbContext | TxContext | undefined;
+    sessionToken: InsertModels.SessionToken;
+  }): Promise<number | undefined> {
+    const inserted = await this.insertRow({ dbOrTx, value: sessionToken });
     return inserted?.tokenId;
   }
 
