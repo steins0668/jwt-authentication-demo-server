@@ -55,60 +55,36 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     return inserted?.sessionId;
   }
 
-  //   /**
-  //    * @public
-  //    * @async
-  //    * @function tryUpdateSessionToken
-  //    * @description Asynchronously attempts to update {@link UserSession.refreshTokenHash} and
-  //    * {@link UserSession.lastUsedAt}.
-  //    *
-  //    * @param data Contains the following fields:
-  //    * - {@link sessionNumberHash} - The id of the session to be updated. Used for logging.
-  //    * - {@link userId} - The id of the user tied to the session.  Used for logging.
-  //    * - {@link oldTokenHash} - The hash of the refresh token to be rotated out. Used for setting
-  //    * the `where` condition of the update operation.
-  //    * - {@link newTokenHash} - The hash of the new refresh token that will replace the old token hash.
-  //    * @returns A `Promise` that resolves to the {@link UserSession.userId} if the update operation succeeds
-  //    * and `null` otherwise.
-  //    */
-  //   public async tryUpdateSessionToken(data: {
-  //     sessionNumberHash: string;
-  //     userId: number;
-  //     oldTokenHash: string;
-  //     newTokenHash: string;
-  //   }): Promise<number | null> {
-  //     const { sessionNumberHash, userId, oldTokenHash, newTokenHash } = data;
+  /**
+   * todo: add docs
+   */
+  public async tryUpdateLastUsed(
+    updateOptions:
+      | {
+          findBy: "session_id";
+          sessionid: number;
+        }
+      | {
+          findBy: "session_hash";
+          sessionHash: string;
+        }
+  ): Promise<number | undefined> {
+    const { findBy: queryBy } = updateOptions;
+    const whereClause =
+      queryBy === "session_hash"
+        ? eq(UserSession.sessionHash, updateOptions.sessionHash)
+        : eq(UserSession.sessionId, updateOptions.sessionid);
 
-  //     try {
-  //       DbLogger.info(
-  //         `[UserSession] Attempting to update refresh token of session (session_number_hash: ${sessionNumberHash}, userId: ${userId}).`
-  //       );
+    const now = new Date();
+    const updatedSessionIds = await this._dbContext
+      .update(UserSession)
+      .set({ lastUsedAt: now.toISOString() })
+      .where(whereClause)
+      .returning()
+      .then((result) => result[0]?.sessionId);
 
-  //       const now = new Date();
-
-  //       const updatedSessionId: number | null = await this._dbContext
-  //         .update(UserSession)
-  //         .set({ refreshTokenHash: newTokenHash, lastUsedAt: now.toISOString() })
-  //         .where(eq(UserSession.refreshTokenHash, oldTokenHash))
-  //         .returning()
-  //         .then((result) => result[0]?.sessionId ?? null);
-
-  //       if (!updatedSessionId) throw new Error();
-
-  //       DbLogger.info(
-  //         `[UserSession] Success updating refresh token of session (session_id: ${updatedSessionId}, userId: ${userId}).`
-  //       );
-
-  //       return updatedSessionId;
-  //     } catch (err) {
-  //       DbLogger.error(
-  //         `[UserSession] Failed updating refresh token of session (session_id: ${sessionNumberHash}, userId: ${userId}).`,
-  //         err
-  //       );
-
-  //       return null;
-  //     }
-  //   }
+    return updatedSessionIds;
+  }
 
   /**
    * @public
