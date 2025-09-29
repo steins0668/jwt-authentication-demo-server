@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { DbContext } from "../../../../db/createContext";
 import { SessionToken } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, ViewModels, Tables } from "../../types";
@@ -21,6 +22,10 @@ type TokenHash = {
 type QueryOptions = TokenId | SessionId | TokenHash;
 
 export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
+  public constructor(context: DbContext) {
+    super(context, SessionToken);
+  }
+
   public async tryInsertToken(
     token: InsertModels.SessionToken
   ): Promise<number | undefined> {
