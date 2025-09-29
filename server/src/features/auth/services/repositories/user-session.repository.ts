@@ -1,13 +1,20 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
 import { DbContext } from "../../../../db/createContext";
-import { DbAccess } from "../../../../error";
 import { UserSession } from "../../../../models";
 import { Repository } from "../../../../services";
-import { LogUtil, ResultBuilder } from "../../../../utils";
-import { BaseResult } from "../../../../types";
 import { InsertModels, ViewModels, Tables } from "../../types";
 
-const { DbLogger } = LogUtil;
+type BySessionId = {
+  queryBy: "session_id";
+  sessionId: number;
+};
+
+type BySessionHash = {
+  queryBy: "session_hash";
+  sessionHash: string;
+};
+
+type QueryOptions = BySessionId | BySessionHash;
 
 type DeleteUserSession = {
   scope: "user_session";
@@ -59,21 +66,13 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * todo: add docs
    */
   public async tryUpdateLastUsed(
-    updateOptions:
-      | {
-          findBy: "session_id";
-          sessionid: number;
-        }
-      | {
-          findBy: "session_hash";
-          sessionHash: string;
-        }
+    queryOptions: QueryOptions
   ): Promise<number | undefined> {
-    const { findBy: queryBy } = updateOptions;
+    const { queryBy } = queryOptions;
     const whereClause =
       queryBy === "session_hash"
-        ? eq(UserSession.sessionHash, updateOptions.sessionHash)
-        : eq(UserSession.sessionId, updateOptions.sessionid);
+        ? eq(UserSession.sessionHash, queryOptions.sessionHash)
+        : eq(UserSession.sessionId, queryOptions.sessionId);
 
     const now = new Date();
     const updatedSessionIds = await this._dbContext
