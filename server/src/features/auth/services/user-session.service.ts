@@ -49,7 +49,7 @@ export class UserSessionService {
   }
 
   //  todo: add docs
-  public async tryStartNewSession(sessionData: {
+  public async newSession(sessionData: {
     sessionNumber: string;
     userId: number;
     refreshToken: string;
@@ -80,7 +80,7 @@ export class UserSessionService {
     try {
       const result = await sessionRepo.execTransaction(async (tx) => {
         //  create session
-        const sessionId = await sessionRepo.tryInsertSession({
+        const sessionId = await sessionRepo.insertSession({
           dbOrTx: tx,
           userSession,
         });
@@ -93,7 +93,7 @@ export class UserSessionService {
           createdAt: nowISO,
         };
         //  store first refresh token
-        const tokenId = await tokenRepo.tryInsertToken({
+        const tokenId = await tokenRepo.insertToken({
           dbOrTx: tx,
           sessionToken,
         });
@@ -117,7 +117,7 @@ export class UserSessionService {
   }
 
   //    todo: add docs
-  public async tryUpdateSession(data: {
+  public async updateSession(data: {
     sessionNumber: string;
     oldToken: string;
     newToken: string;
@@ -137,7 +137,7 @@ export class UserSessionService {
     try {
       const updatedSessionId = await sessionRepo.execTransaction(async (tx) => {
         //  updated last used for session
-        const sessionId = await sessionRepo.tryUpdateLastUsed({
+        const sessionId = await sessionRepo.updateLastUsed({
           dbOrTx: tx,
           queryBy: "session_hash",
           sessionHash,
@@ -146,7 +146,7 @@ export class UserSessionService {
         if (!sessionId) throw new Error("Failed updating session.");
 
         //  invalidate old token
-        const invalidTknId = await tokenRepo.tryInvalidateTokens({
+        const invalidTknId = await tokenRepo.invalidateTokens({
           dbOrTx: tx,
           queryBy: "token_hash",
           tokenHash: oldTknHash,
@@ -163,7 +163,7 @@ export class UserSessionService {
         };
 
         //  add new token
-        const newTknId = await tokenRepo.tryInsertToken({
+        const newTknId = await tokenRepo.insertToken({
           dbOrTx: tx,
           sessionToken: newTkn,
         });
@@ -195,7 +195,7 @@ export class UserSessionService {
    * @returns A `Promise` resolving to the `id` of the deleted session, or `null` if the
    * operation fails.
    */
-  public async tryEndSession(
+  public async endSession(
     sessionNumber: string
   ): Promise<
     | BaseResult.Success<number | undefined, "DB_DELETE">
@@ -204,7 +204,7 @@ export class UserSessionService {
     const sessionNumberHash = HashUtil.byCrypto(sessionNumber);
 
     try {
-      const deleteResult = await this._userSessionRepository.tryDeleteSessions({
+      const deleteResult = await this._userSessionRepository.deleteSessions({
         scope: "user_session",
         sessionNumberHash,
       });
@@ -237,7 +237,7 @@ export class UserSessionService {
   > {
     try {
       const deletedSessionIds =
-        await this._userSessionRepository.tryDeleteSessions({
+        await this._userSessionRepository.deleteSessions({
           scope: "idle_session",
         });
 
@@ -267,7 +267,7 @@ export class UserSessionService {
   > {
     try {
       const deletedSessionIds =
-        await this._userSessionRepository.tryDeleteSessions({
+        await this._userSessionRepository.deleteSessions({
           scope: "expired_persistent",
         });
 

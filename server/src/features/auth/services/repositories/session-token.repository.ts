@@ -28,7 +28,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     super(context, SessionToken);
   }
 
-  public async tryInsertToken({
+  public async insertToken({
     dbOrTx,
     sessionToken,
   }: {
@@ -39,7 +39,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return inserted?.tokenId;
   }
 
-  public async tryGetTokens(
+  public async getTokens(
     queryOptions: {
       isAscending?: boolean;
       pageSize?: number;
@@ -57,7 +57,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return tokens;
   }
 
-  public async tryInvalidateTokens(
+  public async invalidateTokens(
     queryOptions: QueryOptions
   ): Promise<ViewModels.SessionToken[]> {
     const whereClause = this.getWhereClause(queryOptions);

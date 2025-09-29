@@ -50,7 +50,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     super(context, UserSession);
   }
 
-  public async tryGetSession(
+  public async getSession(
     queryOptions: {
       isAscending?: boolean;
       pageSize?: number;
@@ -83,7 +83,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @returns A `Promise` that resolves to the `sessionId` or `undefined` if the insert
    * operation fails.
    */
-  public async tryInsertSession({
+  public async insertSession({
     dbOrTx,
     userSession,
   }: {
@@ -97,7 +97,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
   /**
    * todo: add docs
    */
-  public async tryUpdateLastUsed(
+  public async updateLastUsed(
     queryOptions: QueryOptions
   ): Promise<number | undefined> {
     const { queryBy, dbOrTx = this._dbContext } = queryOptions;
@@ -138,9 +138,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @returns A `Promise` that resolves to an array of numbers if the delete operation
    * ran successfully or `null` if it failed.
    */
-  public async tryDeleteSessions(
-    deleteTarget: DeleteTarget
-  ): Promise<number[]> {
+  public async deleteSessions(deleteTarget: DeleteTarget): Promise<number[]> {
     const { scope, dbOrTx = this._dbContext } = deleteTarget;
     const operationScope =
       scope === "user_session"
