@@ -14,7 +14,9 @@ type BySessionHash = {
   sessionHash: string;
 };
 
-type QueryOptions = BySessionId | BySessionHash;
+type QueryOptions = {
+  dbOrTx?: DbContext | TxContext | undefined;
+} & (BySessionId | BySessionHash);
 
 type DeleteUserSession = {
   scope: "user_session";
@@ -34,11 +36,14 @@ type DeleteIdleSession = {
   scope: "idle_session";
 };
 
-type DeleteTarget =
+type DeleteTarget = {
+  dbOrTx?: DbContext | TxContext | undefined;
+} & (
   | DeleteUserSession
   | DeleteAllUserSessions
   | DeleteExpiredPersistent
-  | DeleteIdleSession;
+  | DeleteIdleSession
+);
 
 export class UserSessionRepository extends Repository<Tables.UserSessions> {
   public constructor(context: DbContext) {
@@ -95,14 +100,14 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
   public async tryUpdateLastUsed(
     queryOptions: QueryOptions
   ): Promise<number | undefined> {
-    const { queryBy } = queryOptions;
+    const { queryBy, dbOrTx = this._dbContext } = queryOptions;
     const whereClause =
       queryBy === "session_hash"
         ? eq(UserSession.sessionHash, queryOptions.sessionHash)
         : eq(UserSession.sessionId, queryOptions.sessionId);
 
     const now = new Date();
-    const updatedSessionIds = await this._dbContext
+    const updatedSessionIds = await dbOrTx
       .update(UserSession)
       .set({ lastUsedAt: now.toISOString() })
       .where(whereClause)
@@ -136,7 +141,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
   public async tryDeleteSessions(
     deleteTarget: DeleteTarget
   ): Promise<number[]> {
-    const { scope } = deleteTarget;
+    const { scope, dbOrTx = this._dbContext } = deleteTarget;
     const operationScope =
       scope === "user_session"
         ? `session_number_hash: ${deleteTarget.sessionNumberHash}.`
@@ -148,7 +153,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
 
     const deleteCondition = this.getSessionDeleteCondition(deleteTarget);
 
-    const deletedIds = await this._dbContext
+    const deletedIds = await dbOrTx
       .delete(UserSession)
       .where(deleteCondition)
       .returning()
