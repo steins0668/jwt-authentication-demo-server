@@ -7,7 +7,7 @@ import * as schema from "../models";
 
 export type DbContext = BetterSQLite3Database<typeof schema>;
 export type TxContext = SQLiteTransaction<
-  "async",
+  "sync",
   Database.RunResult,
   typeof schema,
   ExtractTablesWithRelations<typeof schema>
