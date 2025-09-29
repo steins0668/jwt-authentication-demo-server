@@ -85,7 +85,8 @@ export class UserSessionService {
           userSession,
         });
 
-        if (!sessionId) throw new Error("Failed creating session.");
+        if (sessionId === undefined)
+          throw new Error("Failed creating session.");
 
         const sessionToken: InsertModels.SessionToken = {
           sessionId,
@@ -98,7 +99,7 @@ export class UserSessionService {
           sessionToken,
         });
 
-        if (!tokenId) throw new Error("Failed creating token.");
+        if (tokenId === undefined) throw new Error("Failed creating token.");
 
         return sessionId;
       });
@@ -143,16 +144,18 @@ export class UserSessionService {
           sessionHash,
         });
 
-        if (!sessionId) throw new Error("Failed updating session.");
+        if (sessionId === undefined)
+          throw new Error("Failed updating session.");
 
         //  invalidate old token
-        const invalidTknId = await tokenRepo.invalidateTokens({
+        const result = await tokenRepo.invalidateTokens({
           dbOrTx: tx,
           queryBy: "token_hash",
           tokenHash: oldTknHash,
         });
 
-        if (!invalidTknId) throw new Error("Failed invalidating old token.");
+        if (result[0] === undefined)
+          throw new Error("Failed invalidating old token.");
 
         const now = new Date();
         const nowISO = now.toISOString();
@@ -162,13 +165,24 @@ export class UserSessionService {
           createdAt: nowISO,
         };
 
+        const usedTokens = await tokenRepo.getTokens({
+          dbOrTx: tx,
+          queryBy: "token_hash",
+          tokenHash: newTknHash,
+        });
+
+        //  todo: add fallback behavior to this (delete/logout all sessions)
+        if (usedTokens.some((token) => token.isUsed))
+          throw new Error("Token already used!!");
+
         //  add new token
         const newTknId = await tokenRepo.insertToken({
           dbOrTx: tx,
           sessionToken: newTkn,
         });
 
-        if (!newTknId) throw new Error("Failed creating new token.");
+        if (newTknId === undefined)
+          throw new Error("Failed creating new token.");
 
         return sessionId;
       });
