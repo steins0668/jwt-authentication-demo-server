@@ -1,6 +1,10 @@
 import bcrypt from "bcrypt";
 import { createContext } from "../../../db/createContext";
-import { UserRepository, type IUserFilter } from "./repositories";
+import {
+  RoleRepository,
+  UserRepository,
+  type IUserFilter,
+} from "./repositories";
 import type { InsertModels, ViewModels } from "../types";
 import { ResultBuilder } from "../../../utils";
 import type { BaseResult } from "../../../types";
@@ -11,14 +15,20 @@ type NewUser = InsertModels.User;
 
 export async function createUserDataService() {
   const dbContext = await createContext();
+  const roleRepoInstance = new RoleRepository(dbContext);
   const userRepoInstance = new UserRepository(dbContext);
-  return new UserDataService(userRepoInstance);
+  return new UserDataService(roleRepoInstance, userRepoInstance);
 }
 
 export class UserDataService {
+  private readonly _roleRepository: RoleRepository;
   private readonly _userRepository: UserRepository;
 
-  public constructor(userRepository: UserRepository) {
+  public constructor(
+    roleRepository: RoleRepository,
+    userRepository: UserRepository
+  ) {
+    this._roleRepository = roleRepository;
     this._userRepository = userRepository;
   }
 
@@ -119,6 +129,15 @@ export class UserDataService {
         })
       );
     }
+  }
+
+  public async getUserRole(roleId: number): Promise<string | undefined> {
+    const role = await this._roleRepository.getRole({
+      searchBy: "id",
+      id: roleId,
+    });
+
+    return role?.roleName;
   }
 }
 type TryGetUserOptions = WithUser | WithLogin;
