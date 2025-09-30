@@ -3,6 +3,7 @@ import { AccessTknPayload, RefreshTknPayload } from "../schemas";
 import { ViewModels } from "../types";
 import { createJwt } from "./create-jwt.util";
 import { createPayload } from "./create-payload.util";
+import { DbAccess } from "../../../error";
 
 type Tokens = {
   accessToken: string;
@@ -40,7 +41,11 @@ export async function createTokens(
 
   const role = await req.userDataService.getUserRole(verifiedUser.userId);
 
-  if (role === undefined) throw new Error("System error."); //  todo: add better error handling
+  if (role === undefined)
+    throw new DbAccess.ErrorClass({
+      name: "DB_ACCESS_QUERY_ERROR",
+      message: "Failed finding role for user with id:" + verifiedUser.userId,
+    });
 
   const accessTokenPayload: AccessTknPayload = createPayload({
     tknType: "access",

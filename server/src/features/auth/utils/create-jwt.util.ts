@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { AuthToken } from "../types";
 import { AccessTknPayload, RefreshTknPayload } from "../schemas";
 import { TOKEN_CONFIG_RECORD } from "../data";
+import { AuthEnv } from "../error";
 
 type AccessOptions = {
   tokenType: Extract<AuthToken, "access">;
@@ -32,12 +33,11 @@ type JwtOptions = AccessOptions | RefreshOptions;
 export function createJwt({ tokenType, payload }: JwtOptions): string {
   const { secret, signOptions } = TOKEN_CONFIG_RECORD[tokenType];
 
-  if (!secret) {
-    //  todo: add better error handling
-    throw new Error(
-      `${tokenType.toUpperCase()}_TOKEN_SECRET is not defined in env.`
-    );
-  }
+  if (!secret)
+    throw new AuthEnv.ErrorClass({
+      name: "ENV_TKN_SECRET_ERROR",
+      message: `${tokenType.toUpperCase()}_TOKEN_SECRET is not defined in env.`,
+    });
 
   const token: string = jwt.sign(payload, secret, signOptions);
 
