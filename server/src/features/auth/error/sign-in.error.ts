@@ -3,8 +3,9 @@ import { isError } from "../../../utils";
 
 export namespace SignIn {
   export type ErrorName =
-    | "SIGN_IN_INVALID_CREDENTIALS_ERROR"
-    | "SIGN_IN_VERIFICATION_ERROR";
+    | "SIGN_IN_INVALID_CREDENTIALS_ERROR" //  deprecated, use SIGN_IN_VERIFICATION_ERROR
+    | "SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
+    | "SIGN_IN_SYSTEM_ERROR"; //  internal errors (e.g. db)
 
   export class ErrorClass extends BaseError<ErrorName> {}
 
