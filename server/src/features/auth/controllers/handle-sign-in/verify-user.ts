@@ -1,6 +1,9 @@
 import { Request } from "express";
 import bcrypt from "bcrypt";
 import { REGEX } from "../../../../data";
+import { BaseResult } from "../../../../types";
+import { ResultBuilder } from "../../../../utils";
+import * as AuthError from "../../error";
 import { SignInSchema } from "../../schemas";
 import { ViewModels } from "../../types";
 
@@ -20,10 +23,13 @@ import { ViewModels } from "../../types";
  */
 export async function verifyUser(
   req: Request<{}, {}, SignInSchema>
-): Promise<ViewModels.User | null> {
+): Promise<
+  | BaseResult.Success<ViewModels.User, "CREDENTIAL_VERIFICATION">
+  | BaseResult.Fail<AuthError.SignIn.ErrorClass>
+> {
   const { body: authDetails, requestLogger } = req;
 
-  requestLogger.log("debug", "Validating login credentials.");
+  requestLogger.log("debug", "Verifying user...");
 
   const isEmail = REGEX.AUTH.EMAIL.test(authDetails.identifier);
   const signInMethod = isEmail ? "email" : "username";
@@ -34,18 +40,32 @@ export async function verifyUser(
     authDetails,
   });
 
-  if (queryResult.success && queryResult.result) {
+  if (queryResult.success) {
     //  query completed and there is a result
     const { result } = queryResult;
 
-    const { password } = authDetails;
-    const { passwordHash } = result;
+    if (result) {
+      const { password } = authDetails;
+      const { passwordHash } = result;
 
-    const isAuthenticated = await bcrypt.compare(password, passwordHash);
+      const isAuthenticated = await bcrypt.compare(password, passwordHash);
 
-    //  success authenticating with password.
-    if (isAuthenticated) return result;
+      //  success authenticating with password.
+      if (isAuthenticated)
+        return ResultBuilder.success(result, "CREDENTIAL_VERIFICATION");
+    }
+
+    //  no user found with credentials or incorrect password.
+    return ResultBuilder.fail({
+      name: "SIGN_IN_VERIFICATION_ERROR",
+      message: "Incorrect sign-in credentials. Please try again.",
+    });
   }
 
-  return null;
+  //  db query failed for some reason.
+  return ResultBuilder.fail({
+    name: "SIGN_IN_SYSTEM_ERROR",
+    message: "An error occurred while authenticating. Please try again later.",
+    cause: queryResult.error,
+  });
 }
