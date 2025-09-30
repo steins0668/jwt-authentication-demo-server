@@ -7,5 +7,7 @@ export namespace StatusCode {
     DB_ACCESS_EMPTY_TABLE_ERROR: 500,
     DB_ACCESS_INSERT_ERROR: 500,
     DB_ACCESS_QUERY_ERROR: 500,
+    DB_ACCESS_UPDATE_ERROR: 500,
+    DB_ACCESS_DELETE_ERROR: 500,
   } as const;
 }
