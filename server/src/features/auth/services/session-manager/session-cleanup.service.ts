@@ -1,6 +1,6 @@
-import { DbAccess } from "../../../../error";
-import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
+import { Session } from "../../error";
+import { SessionResult } from "../../types";
 import { UserSessionRepository } from "../repositories";
 
 export class SessionCleanupService {
@@ -22,10 +22,7 @@ export class SessionCleanupService {
    */
   public async endSession(
     sessionNumber: string
-  ): Promise<
-    | BaseResult.Success<number | undefined, "DB_DELETE">
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
+  ): Promise<SessionResult.Success<number | undefined> | SessionResult.Fail> {
     try {
       const deleteResult = await this._userSessionRepository.deleteSessions({
         scope: "user_session",
@@ -34,10 +31,10 @@ export class SessionCleanupService {
 
       const deletedId = deleteResult[0];
 
-      return ResultBuilder.success(deletedId, "DB_DELETE");
+      return ResultBuilder.success(deletedId, "SESSION_END");
     } catch (err) {
-      const error: DbAccess.ErrorClass = {
-        name: "DB_ACCESS_QUERY_ERROR",
+      const error: Session.ErrorClass = {
+        name: "SESSION_CLEANUP_ERROR",
         message: "Failed deleting session. Please try again later.",
         cause: err,
       };
@@ -54,8 +51,7 @@ export class SessionCleanupService {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endIdleSessions(): Promise<
-    | BaseResult.Success<number[], "DB_DELETE">
-    | BaseResult.Fail<DbAccess.ErrorClass>
+    SessionResult.Success<number[]> | SessionResult.Fail
   > {
     try {
       const deletedSessionIds =
@@ -63,10 +59,10 @@ export class SessionCleanupService {
           scope: "idle_session",
         });
 
-      return ResultBuilder.success(deletedSessionIds, "DB_DELETE");
+      return ResultBuilder.success(deletedSessionIds, "SESSION_END");
     } catch (err) {
-      const error: DbAccess.ErrorClass = {
-        name: "DB_ACCESS_QUERY_ERROR",
+      const error: Session.ErrorClass = {
+        name: "SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
       };
@@ -84,8 +80,7 @@ export class SessionCleanupService {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endExpiredSessions(): Promise<
-    | BaseResult.Success<number[], "DB_DELETE">
-    | BaseResult.Fail<DbAccess.ErrorClass>
+    SessionResult.Success<number[]> | SessionResult.Fail
   > {
     try {
       const deletedSessionIds =
@@ -93,10 +88,10 @@ export class SessionCleanupService {
           scope: "expired_persistent",
         });
 
-      return ResultBuilder.success(deletedSessionIds, "DB_DELETE");
+      return ResultBuilder.success(deletedSessionIds, "SESSION_END");
     } catch (err) {
-      const error: DbAccess.ErrorClass = {
-        name: "DB_ACCESS_QUERY_ERROR",
+      const error: Session.ErrorClass = {
+        name: "SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
       };
