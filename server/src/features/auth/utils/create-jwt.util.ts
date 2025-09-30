@@ -33,6 +33,7 @@ export function createJwt({ tokenType, payload }: JwtOptions): string {
   const { secret, signOptions } = TOKEN_CONFIG_RECORD[tokenType];
 
   if (!secret) {
+    //  todo: add better error handling
     throw new Error(
       `${tokenType.toUpperCase()}_TOKEN_SECRET is not defined in env.`
     );
