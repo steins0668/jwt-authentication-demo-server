@@ -2,7 +2,9 @@ import { BaseError } from "../../../error";
 import { isError } from "../../../utils";
 
 export namespace SignIn {
-  export type ErrorName = "SIGN_IN_INVALID_CREDENTIALS_ERROR";
+  export type ErrorName =
+    | "SIGN_IN_INVALID_CREDENTIALS_ERROR"
+    | "SIGN_IN_VERIFICATION_ERROR";
 
   export class ErrorClass extends BaseError<ErrorName> {}
 
