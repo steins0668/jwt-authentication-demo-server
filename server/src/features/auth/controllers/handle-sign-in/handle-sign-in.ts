@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { ResultBuilder } from "../../../../utils";
 import * as AuthError from "../../error";
 import { SignInSchema } from "../../schemas";
-import { getVerifiedUser } from "./get-verified-user";
+import { verifyUser } from "./verify-user";
 
 export async function handleSignIn(
   req: Request<{}, {}, SignInSchema>,
@@ -11,7 +11,7 @@ export async function handleSignIn(
   const { body: authDetails, requestLogger: logger, userDataService } = req;
 
   //  validate user credentials
-  const verifiedUser = await getVerifiedUser(req);
+  const verifiedUser = await verifyUser(req);
 
   if (!verifiedUser) {
     //  authentication failed

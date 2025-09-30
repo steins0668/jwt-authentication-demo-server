@@ -18,7 +18,7 @@ import { ViewModels } from "../../types";
  * @returns A `Promise` that resolves to the User `ViewModel` that contains details about
  * the verified `User` or `null` if validation or verification fails..
  */
-export async function getVerifiedUser(
+export async function verifyUser(
   req: Request<{}, {}, SignInSchema>
 ): Promise<ViewModels.User | null> {
   const { body: authDetails, requestLogger } = req;
