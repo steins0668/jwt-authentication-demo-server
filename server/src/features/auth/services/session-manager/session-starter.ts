@@ -45,7 +45,7 @@ export class SessionStarter {
         }
       );
 
-      return ResultBuilder.success(result, "SESSION");
+      return ResultBuilder.success(result, "SESSION_START");
     } catch (err) {
       const error = Session.normalizeError({
         name: "SESSION_START_ERROR",
