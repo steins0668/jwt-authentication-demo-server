@@ -4,6 +4,9 @@ import { ViewModels } from "../types";
 import { createJwt } from "./create-jwt.util";
 import { createPayload } from "./create-payload.util";
 import { DbAccess } from "../../../error";
+import { BaseResult } from "../../../types";
+import { Session } from "../error";
+import { ResultBuilder } from "../../../utils";
 
 type Tokens = {
   accessToken: string;
@@ -31,20 +34,27 @@ type Tokens = {
  */
 export async function createTokens(
   req: Request,
-  verifiedUser: ViewModels.User,
-  sessionNumber: string,
-  isPersistentAuth?: boolean
-): Promise<Tokens> {
+  options: {
+    verifiedUser: ViewModels.User;
+    sessionNumber: string;
+    isPersistentAuth?: boolean | undefined;
+  }
+): Promise<
+  | BaseResult.Success<Tokens, "TOKEN_CREATION">
+  | BaseResult.Fail<Session.ErrorClass>
+> {
   const { requestLogger } = req;
+  const { verifiedUser, sessionNumber, isPersistentAuth } = options;
 
   requestLogger.log("debug", "Creating tokens.");
 
   const role = await req.userDataService.getUserRole(verifiedUser.userId);
 
   if (role === undefined)
-    throw new DbAccess.ErrorClass({
-      name: "DB_ACCESS_QUERY_ERROR",
-      message: "Failed finding role for user with id:" + verifiedUser.userId,
+    //  failed finding role for some reason.
+    return ResultBuilder.fail({
+      name: "SESSION_TOKEN_CREATION_ERROR",
+      message: "Failed creating tokens.",
     });
 
   const accessTokenPayload: AccessTknPayload = createPayload({
@@ -68,5 +78,5 @@ export async function createTokens(
     payload: refreshTokenPayload,
   });
 
-  return { accessToken, refreshToken };
+  return ResultBuilder.success({ accessToken, refreshToken }, "TOKEN_CREATION");
 }
