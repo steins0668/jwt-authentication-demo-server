@@ -1,11 +1,11 @@
 import { Request } from "express";
 import bcrypt from "bcrypt";
-import { REGEX } from "../../../../data";
 import { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
 import * as AuthError from "../../error";
 import { SignInSchema } from "../../schemas";
 import { ViewModels } from "../../types";
+import { getSignInMethod } from "./get-sign-in-method";
 
 /**
  * @public
@@ -31,8 +31,14 @@ export async function verifyUser(
 
   requestLogger.log("debug", "Verifying user...");
 
-  const isEmail = REGEX.AUTH.EMAIL.test(authDetails.identifier);
-  const signInMethod = isEmail ? "email" : "username";
+  const signInMethod = getSignInMethod(authDetails.identifier);
+
+  if (signInMethod === null)
+    //  garbage input guard
+    return ResultBuilder.fail({
+      name: "SIGN_IN_INVALID_CREDENTIALS_ERROR",
+      message: "Incorrect sign-in credentials. Please try again.",
+    });
 
   const queryResult = await req.userDataService.tryGetUser({
     type: "login",
