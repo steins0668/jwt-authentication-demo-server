@@ -51,6 +51,7 @@ export class SessionManager {
    */
   public async startSession(sessionData: {
     userId: number;
+    sessionNumber: string;
     refreshToken: string;
     expiresAt?: Date | null;
   }): Promise<SessionResult.Success<string> | SessionResult.Fail> {

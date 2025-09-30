@@ -26,16 +26,23 @@ export class SessionStarter {
   //  todo: add docs
   public async newSession(sessionData: {
     userId: number;
+    sessionNumber: string;
     refreshToken: string;
     expiresAt?: Date | null;
   }): Promise<SessionResult.Success<string> | SessionResult.Fail> {
-    const { userId, refreshToken, expiresAt = null } = sessionData;
+    const {
+      userId,
+      sessionNumber,
+      refreshToken,
+      expiresAt = null,
+    } = sessionData;
 
     try {
       const result = await this._userSessionRepository.execTransaction(
         async (tx) => {
-          const { sessionId, sessionNumber } = await this.createSession({
+          const sessionId = await this.createSession({
             tx,
+            sessionNumber,
             userId,
             expiresAt,
           });
@@ -69,15 +76,15 @@ export class SessionStarter {
    */
   private async createSession(options: {
     tx: TxContext;
+    sessionNumber: string;
     userId: number;
     expiresAt?: Date | null;
-  }): Promise<{ sessionId: number; sessionNumber: string }> {
-    const { tx, userId, expiresAt } = options;
+  }): Promise<number> {
+    const { tx, userId, sessionNumber, expiresAt } = options;
 
     const now = new Date();
     const nowISO = now.toISOString();
     //  create session
-    const sessionNumber = this.generateSessionNumber(userId);
     const sessionId = await this._userSessionRepository.insertSession({
       dbOrTx: tx,
       userSession: {
@@ -95,7 +102,7 @@ export class SessionStarter {
         message: "Failed storing session to database.",
       });
 
-    return { sessionId, sessionNumber };
+    return sessionId;
   }
 
   /**
