@@ -3,6 +3,8 @@ import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { SessionTokenRepository, UserSessionRepository } from "../repositories";
+import { SessionResult } from "../../types";
+import { Session } from "../../error";
 
 /**
  * @class
@@ -26,10 +28,7 @@ export class SessionStarter {
     userId: number;
     refreshToken: string;
     expiresAt?: Date | null;
-  }): Promise<
-    | BaseResult.Success<string, "DB_INSERT">
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
+  }): Promise<SessionResult.Success<string> | SessionResult.Fail> {
     const { userId, refreshToken, expiresAt } = sessionData;
 
     const now = new Date();
@@ -69,14 +68,14 @@ export class SessionStarter {
         return sessionNumber;
       });
 
-      return ResultBuilder.success(result, "DB_INSERT");
+      return ResultBuilder.success(result, "SESSION");
     } catch (err) {
-      const error: DbAccess.ErrorClass = {
-        name: "DB_ACCESS_INSERT_ERROR",
+      const error = Session.normalizeError({
+        name: "SESSION_START_ERROR",
         message:
           "An error occured while creating session. Please try again later.",
-        cause: err,
-      };
+        err,
+      });
 
       return ResultBuilder.fail(error);
     }
