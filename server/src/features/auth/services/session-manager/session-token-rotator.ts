@@ -1,7 +1,8 @@
 import { TxContext } from "../../../../db/createContext";
+import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
-import { SessionResult } from "../../types";
+import { SessionResult, ViewModels } from "../../types";
 import { SessionTokenRepository, UserSessionRepository } from "../repositories";
 
 export class SessionTokenRotator {
@@ -69,16 +70,30 @@ export class SessionTokenRotator {
     tx: TxContext;
     sessionNumber: string;
   }): Promise<number> {
-    //  updated last used for session
-    const updatedId = await this._userSessionRepository.updateLastUsed({
-      dbOrTx: options.tx,
-      queryBy: "session_hash",
-      sessionHash: HashUtil.byCrypto(options.sessionNumber),
-    });
+    const getUpdateErr = (cause?: unknown) => {
+      return new DbAccess.ErrorClass({
+        name: "DB_ACCESS_UPDATE_ERROR",
+        message: "Failed updating session.",
+        cause,
+      });
+    };
 
-    if (updatedId === undefined) throw new Error("Failed updating session.");
+    try {
+      //  updated last used for session
+      const updatedId = await this._userSessionRepository.updateLastUsed({
+        dbOrTx: options.tx,
+        queryBy: "session_hash",
+        sessionHash: HashUtil.byCrypto(options.sessionNumber),
+      });
 
-    return updatedId;
+      if (updatedId === undefined) throw getUpdateErr();
+
+      return updatedId;
+    } catch (err) {
+      if (err instanceof DbAccess.ErrorClass) throw err;
+
+      throw getUpdateErr(err);
+    }
   }
 
   /**
@@ -90,11 +105,19 @@ export class SessionTokenRotator {
     tx: TxContext;
     oldToken: string;
   }): Promise<void> {
-    await this._sessionTokenRepository.invalidateTokens({
-      dbOrTx: options.tx,
-      queryBy: "token_hash",
-      tokenHash: HashUtil.byCrypto(options.oldToken),
-    });
+    try {
+      await this._sessionTokenRepository.invalidateTokens({
+        dbOrTx: options.tx,
+        queryBy: "token_hash",
+        tokenHash: HashUtil.byCrypto(options.oldToken),
+      });
+    } catch (err) {
+      throw new DbAccess.ErrorClass({
+        name: "DB_ACCESS_UPDATE_ERROR",
+        message: "Faield invalidating previous refresh token.",
+        cause: err,
+      });
+    }
   }
 
   /**
@@ -106,15 +129,27 @@ export class SessionTokenRotator {
     tx: TxContext;
     tknHash: string;
   }): Promise<void> {
-    const usedTokens = await this._sessionTokenRepository.getTokens({
-      dbOrTx: options.tx,
-      queryBy: "token_hash",
-      tokenHash: options.tknHash,
-    });
+    let usedTokens: ViewModels.SessionToken[] = [];
+    try {
+      usedTokens = await this._sessionTokenRepository.getTokens({
+        dbOrTx: options.tx,
+        queryBy: "token_hash",
+        tokenHash: options.tknHash,
+      });
+    } catch (err) {
+      throw new DbAccess.ErrorClass({
+        name: "DB_ACCESS_QUERY_ERROR",
+        message: "Failed checking refresh tokens.",
+        cause: err,
+      });
+    }
 
     //  todo: add fallback behavior to this (delete/logout all sessions)
     if (usedTokens.some((token) => token.isUsed))
-      throw new Error("Token already used!!");
+      throw new Session.ErrorClass({
+        name: "SESSION_TOKEN_REUSE_ERROR",
+        message: "Token is already used.",
+      });
   }
 
   /**
@@ -127,15 +162,29 @@ export class SessionTokenRotator {
     sessionId: number;
     tokenHash: string;
   }) {
-    const newTknId = await this._sessionTokenRepository.insertToken({
-      dbOrTx: options.tx,
-      sessionToken: {
-        ...options,
-        createdAt: new Date().toISOString(),
-      },
-    });
+    const getInsertErr = (cause?: unknown) => {
+      return new DbAccess.ErrorClass({
+        name: "DB_ACCESS_INSERT_ERROR",
+        message: "Failed to store new token.",
+        cause,
+      });
+    };
 
-    if (newTknId === undefined) throw new Error("Failed to store new token.");
+    try {
+      const newTknId = await this._sessionTokenRepository.insertToken({
+        dbOrTx: options.tx,
+        sessionToken: {
+          ...options,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      if (newTknId === undefined) throw getInsertErr();
+    } catch (err) {
+      if (err instanceof DbAccess.ErrorClass) throw err;
+
+      throw getInsertErr(err);
+    }
   }
   //#endregion
 }
