@@ -1,9 +1,9 @@
 import { randomUUID } from "crypto";
 import { TxContext } from "../../../../db/createContext";
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { SessionTokenRepository, UserSessionRepository } from "../repositories";
-import { SessionResult } from "../../types";
 import { Session } from "../../error";
+import { SessionResult } from "../../types";
+import { SessionTokenRepository, UserSessionRepository } from "../repositories";
 
 /**
  * @class
@@ -33,13 +33,14 @@ export class SessionStarter {
     try {
       const result = await this._userSessionRepository.execTransaction(
         async (tx) => {
-          const { sessionId, sessionNumber } = await this.createSession(tx, {
+          const { sessionId, sessionNumber } = await this.createSession({
+            tx,
             userId,
             expiresAt,
           });
 
           //  store first refresh token
-          await this.storeRefreshTkn(tx, { sessionId, refreshToken });
+          await this.storeRefreshTkn({ tx, sessionId, refreshToken });
 
           return sessionNumber;
         }
@@ -58,21 +59,19 @@ export class SessionStarter {
     }
   }
 
+  //#region newSession helpers
   /**
    * @description Create a `UserSession` object and insert it to the `user_sessions`
    * table.
-   * @param tx
-   * @param sessionData
+   * @param options
    * @returns
    */
-  private async createSession(
-    tx: TxContext,
-    sessionData: {
-      userId: number;
-      expiresAt?: Date | null;
-    }
-  ): Promise<{ sessionId: number; sessionNumber: string }> {
-    const { userId, expiresAt } = sessionData;
+  private async createSession(options: {
+    tx: TxContext;
+    userId: number;
+    expiresAt?: Date | null;
+  }): Promise<{ sessionId: number; sessionNumber: string }> {
+    const { tx, userId, expiresAt } = options;
 
     const now = new Date();
     const nowISO = now.toISOString();
@@ -113,14 +112,12 @@ export class SessionStarter {
    * @param tx
    * @param tknData
    */
-  private async storeRefreshTkn(
-    tx: TxContext,
-    tknData: {
-      sessionId: number;
-      refreshToken: string;
-    }
-  ): Promise<void> {
-    const { sessionId, refreshToken } = tknData;
+  private async storeRefreshTkn(tknData: {
+    tx: TxContext;
+    sessionId: number;
+    refreshToken: string;
+  }): Promise<void> {
+    const { tx, sessionId, refreshToken } = tknData;
 
     const tknId = await this._sessionTokenRepository.insertToken({
       dbOrTx: tx,
@@ -133,4 +130,5 @@ export class SessionStarter {
 
     if (tknId === undefined) throw new Error("Token creation failed.");
   }
+  //#endregion
 }
