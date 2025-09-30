@@ -1,6 +1,5 @@
 import { randomUUID } from "crypto";
-import { DbAccess } from "../../../../error";
-import { BaseResult } from "../../../../types";
+import { TxContext } from "../../../../db/createContext";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { SessionTokenRepository, UserSessionRepository } from "../repositories";
 import { SessionResult } from "../../types";
@@ -29,44 +28,22 @@ export class SessionStarter {
     refreshToken: string;
     expiresAt?: Date | null;
   }): Promise<SessionResult.Success<string> | SessionResult.Fail> {
-    const { userId, refreshToken, expiresAt } = sessionData;
-
-    const now = new Date();
-    const nowISO = now.toISOString();
-    const sessionRepo = this._userSessionRepository;
+    const { userId, refreshToken, expiresAt = null } = sessionData;
 
     try {
-      const result = await sessionRepo.execTransaction(async (tx) => {
-        //  create session
-        const sessionNumber = this.generateSessionNumber(userId);
-        const sessionId = await sessionRepo.insertSession({
-          dbOrTx: tx,
-          userSession: {
+      const result = await this._userSessionRepository.execTransaction(
+        async (tx) => {
+          const { sessionId, sessionNumber } = await this.createSession(tx, {
             userId,
-            sessionHash: HashUtil.byCrypto(sessionNumber),
-            createdAt: nowISO,
-            lastUsedAt: nowISO,
-            expiresAt: expiresAt?.toISOString() ?? null,
-          },
-        });
+            expiresAt,
+          });
 
-        if (sessionId === undefined)
-          throw new Error("Failed creating session.");
+          //  store first refresh token
+          await this.storeRefreshTkn(tx, { sessionId, refreshToken });
 
-        //  store first refresh token
-        const tknId = await this._sessionTokenRepository.insertToken({
-          dbOrTx: tx,
-          sessionToken: {
-            sessionId,
-            tokenHash: HashUtil.byCrypto(refreshToken),
-            createdAt: new Date().toISOString(),
-          },
-        });
-
-        if (tknId === undefined) throw new Error("Token creation failed.");
-
-        return sessionNumber;
-      });
+          return sessionNumber;
+        }
+      );
 
       return ResultBuilder.success(result, "SESSION");
     } catch (err) {
@@ -82,6 +59,42 @@ export class SessionStarter {
   }
 
   /**
+   * @description Create a `UserSession` object and insert it to the `user_sessions`
+   * table.
+   * @param tx
+   * @param sessionData
+   * @returns
+   */
+  private async createSession(
+    tx: TxContext,
+    sessionData: {
+      userId: number;
+      expiresAt?: Date | null;
+    }
+  ): Promise<{ sessionId: number; sessionNumber: string }> {
+    const { userId, expiresAt } = sessionData;
+
+    const now = new Date();
+    const nowISO = now.toISOString();
+    //  create session
+    const sessionNumber = this.generateSessionNumber(userId);
+    const sessionId = await this._userSessionRepository.insertSession({
+      dbOrTx: tx,
+      userSession: {
+        userId,
+        sessionHash: HashUtil.byCrypto(sessionNumber),
+        createdAt: nowISO,
+        lastUsedAt: nowISO,
+        expiresAt: expiresAt?.toISOString() ?? null,
+      },
+    });
+
+    if (sessionId === undefined) throw new Error("Failed creating session.");
+
+    return { sessionId, sessionNumber };
+  }
+
+  /**
    * @public
    * @function generateSessionNumber
    * @description Generates a session number for the provided `userId`.
@@ -92,5 +105,32 @@ export class SessionStarter {
   private generateSessionNumber(userId: number): string {
     const sessionNumber = `${userId}-${Date.now()}-${randomUUID()}`;
     return sessionNumber;
+  }
+
+  /**
+   * @description Create a `SessionToken` object and insert it to the
+   * `session_tokens` table.
+   * @param tx
+   * @param tknData
+   */
+  private async storeRefreshTkn(
+    tx: TxContext,
+    tknData: {
+      sessionId: number;
+      refreshToken: string;
+    }
+  ): Promise<void> {
+    const { sessionId, refreshToken } = tknData;
+
+    const tknId = await this._sessionTokenRepository.insertToken({
+      dbOrTx: tx,
+      sessionToken: {
+        sessionId,
+        tokenHash: HashUtil.byCrypto(refreshToken),
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    if (tknId === undefined) throw new Error("Token creation failed.");
   }
 }
