@@ -40,7 +40,7 @@ export class SessionManager {
     return await this._starter.newSession(sessionData);
   }
 
-  public async updateSession(sessionData: {
+  public async rotateTokens(sessionData: {
     sessionNumber: string;
     oldToken: string;
     newToken: string;
