@@ -3,9 +3,10 @@ import { isError } from "../../../utils";
 
 export namespace Session {
   export type ErrorName =
-    | "SESSION_START_ERROR"
-    | "SESSION_TOKEN_ROTATION_ERROR"
-    | "SESSION_CLEANUP_ERROR";
+    | "SESSION_START_ERROR" //  failed starting session
+    | "SESSION_TOKEN_ROTATION_ERROR" //  failed rotating tokens
+    | "SESSION_TOKEN_REUSE_ERROR" //  detected token reuse attempt
+    | "SESSION_CLEANUP_ERROR"; //  failed cleaning up/ending session
 
   export class ErrorClass extends BaseError<ErrorName> {}
 
