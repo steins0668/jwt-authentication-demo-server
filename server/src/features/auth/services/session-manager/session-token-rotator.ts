@@ -1,7 +1,7 @@
 import { TxContext } from "../../../../db/createContext";
-import { DbAccess } from "../../../../error";
-import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
+import { Session } from "../../error";
+import { SessionResult } from "../../types";
 import { SessionTokenRepository, UserSessionRepository } from "../repositories";
 
 export class SessionTokenRotator {
@@ -20,10 +20,7 @@ export class SessionTokenRotator {
     sessionNumber: string;
     oldToken: string;
     newToken: string;
-  }): Promise<
-    | BaseResult.Success<number, "TOKEN_ROTATION">
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
+  }): Promise<SessionResult.Success<number> | SessionResult.Fail> {
     const { sessionNumber, oldToken, newToken } = data;
 
     try {
@@ -52,11 +49,11 @@ export class SessionTokenRotator {
 
       return ResultBuilder.success(result, "TOKEN_ROTATION");
     } catch (err) {
-      const error: DbAccess.ErrorClass = {
-        name: "DB_ACCESS_INSERT_ERROR",
-        message: "Failed updating session.",
-        cause: err,
-      };
+      const error = Session.normalizeError({
+        name: "SESSION_TOKEN_ROTATION_ERROR",
+        message: "Failed rotating tokens. Please try again later.",
+        err,
+      });
 
       return ResultBuilder.fail(error);
     }
