@@ -21,30 +21,16 @@ export class SessionStarter {
     this._userSessionRepository = userSessionRepository;
   }
 
-  /**
-   * @public
-   * @function generateSessionNumber
-   * @description Generates a session number for the provided `userId`.
-   * Uses the `userId`, current date and a random generated `UUID`.
-   * @param userId The `id` of the user.
-   * @returns A string representing the generated session number.
-   */
-  public generateSessionNumber(userId: number): string {
-    const sessionNumber = `${userId}-${Date.now()}-${randomUUID()}`;
-    return sessionNumber;
-  }
-
   //  todo: add docs
   public async newSession(sessionData: {
-    sessionNumber: string;
     userId: number;
     refreshToken: string;
     expiresAt?: Date | null;
   }): Promise<
-    | BaseResult.Success<number, "DB_INSERT">
+    | BaseResult.Success<string, "DB_INSERT">
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
-    const { sessionNumber, userId, refreshToken, expiresAt } = sessionData;
+    const { userId, refreshToken, expiresAt } = sessionData;
 
     const now = new Date();
     const nowISO = now.toISOString();
@@ -53,6 +39,7 @@ export class SessionStarter {
     try {
       const result = await sessionRepo.execTransaction(async (tx) => {
         //  create session
+        const sessionNumber = this.generateSessionNumber(userId);
         const sessionId = await sessionRepo.insertSession({
           dbOrTx: tx,
           userSession: {
@@ -79,7 +66,7 @@ export class SessionStarter {
 
         if (tknId === undefined) throw new Error("Token creation failed.");
 
-        return sessionId;
+        return sessionNumber;
       });
 
       return ResultBuilder.success(result, "DB_INSERT");
@@ -93,5 +80,18 @@ export class SessionStarter {
 
       return ResultBuilder.fail(error);
     }
+  }
+
+  /**
+   * @public
+   * @function generateSessionNumber
+   * @description Generates a session number for the provided `userId`.
+   * Uses the `userId`, current date and a random generated `UUID`.
+   * @param userId The `id` of the user.
+   * @returns A string representing the generated session number.
+   */
+  private generateSessionNumber(userId: number): string {
+    const sessionNumber = `${userId}-${Date.now()}-${randomUUID()}`;
+    return sessionNumber;
   }
 }

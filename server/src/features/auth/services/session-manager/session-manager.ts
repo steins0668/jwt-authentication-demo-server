@@ -37,13 +37,7 @@ export class SessionManager {
     refreshToken: string;
     expiresAt?: Date | null;
   }) {
-    const { userId } = sessionData;
-    const sessionNumber = this._starter.generateSessionNumber(userId);
-
-    return await this._starter.newSession({
-      sessionNumber,
-      ...sessionData,
-    });
+    return await this._starter.newSession(sessionData);
   }
 
   public async updateSession(sessionData: {
