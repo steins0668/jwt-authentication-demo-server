@@ -1,12 +1,11 @@
 import { Request } from "express";
+import { BaseResult } from "../../../types";
+import { ResultBuilder } from "../../../utils";
+import { Session } from "../error";
 import { AccessTknPayload, RefreshTknPayload } from "../schemas";
 import { ViewModels } from "../types";
 import { createJwt } from "./create-jwt.util";
 import { createPayload } from "./create-payload.util";
-import { DbAccess } from "../../../error";
-import { BaseResult } from "../../../types";
-import { Session } from "../error";
-import { ResultBuilder } from "../../../utils";
 
 type Tokens = {
   accessToken: string;
