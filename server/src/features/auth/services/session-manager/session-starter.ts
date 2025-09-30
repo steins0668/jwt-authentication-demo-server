@@ -106,7 +106,7 @@ export class SessionStarter {
    * @param userId The `id` of the user.
    * @returns A string representing the generated session number.
    */
-  private generateSessionNumber(userId: number): string {
+  public generateSessionNumber(userId: number): string {
     const sessionNumber = `${userId}-${Date.now()}-${randomUUID()}`;
     return sessionNumber;
   }
