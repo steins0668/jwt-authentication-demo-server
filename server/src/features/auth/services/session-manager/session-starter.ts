@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { TxContext } from "../../../../db/createContext";
+import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
 import { SessionResult } from "../../types";
@@ -88,7 +89,11 @@ export class SessionStarter {
       },
     });
 
-    if (sessionId === undefined) throw new Error("Failed creating session.");
+    if (sessionId === undefined)
+      throw new DbAccess.ErrorClass({
+        name: "DB_ACCESS_INSERT_ERROR",
+        message: "Failed storing session to database.",
+      });
 
     return { sessionId, sessionNumber };
   }
@@ -128,7 +133,11 @@ export class SessionStarter {
       },
     });
 
-    if (tknId === undefined) throw new Error("Token creation failed.");
+    if (tknId === undefined)
+      throw new DbAccess.ErrorClass({
+        name: "DB_ACCESS_INSERT_ERROR",
+        message: "Failed storing refresh token to database.",
+      });
   }
   //#endregion
 }
