@@ -40,17 +40,11 @@ export class SessionTokenRotator {
           await this.ensureTokenUnused({ tx, tknHash: newTknHash });
 
           //  add new token
-          const newTknId = await this._sessionTokenRepository.insertToken({
-            dbOrTx: tx,
-            sessionToken: {
-              sessionId: updatedId,
-              tokenHash: newTknHash,
-              createdAt: new Date().toISOString(),
-            },
+          await this.storeNewTkn({
+            tx,
+            sessionId: updatedId,
+            tokenHash: newTknHash,
           });
-
-          if (newTknId === undefined)
-            throw new Error("Failed to store new token.");
 
           return updatedId;
         }
@@ -124,6 +118,27 @@ export class SessionTokenRotator {
     //  todo: add fallback behavior to this (delete/logout all sessions)
     if (usedTokens.some((token) => token.isUsed))
       throw new Error("Token already used!!");
+  }
+
+  /**
+   * @description Create a new `SessionToken` object and insert it to the
+   * `session_tokens` table.
+   * @param options
+   */
+  private async storeNewTkn(options: {
+    tx: TxContext;
+    sessionId: number;
+    tokenHash: string;
+  }) {
+    const newTknId = await this._sessionTokenRepository.insertToken({
+      dbOrTx: options.tx,
+      sessionToken: {
+        ...options,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    if (newTknId === undefined) throw new Error("Failed to store new token.");
   }
   //#endregion
 }
