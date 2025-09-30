@@ -34,6 +34,15 @@ export class SessionManager {
   }
 
   /**
+   * @description Generates a session number for the provided `userId`.
+   * Uses the `userId`, current date and a random generated `UUID`.
+   * @param userId
+   * @returns
+   */
+  public generateSessionNumber(userId: number): string {
+    return this._starter.generateSessionNumber(userId);
+  }
+  /**
    * Creates a new session based on the provided session data.
    *
    * @param sessionData
