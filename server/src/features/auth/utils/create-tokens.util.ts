@@ -53,7 +53,7 @@ export async function createTokens(
     //  failed finding role for some reason.
     return ResultBuilder.fail({
       name: "SESSION_TOKEN_CREATION_ERROR",
-      message: "Failed creating tokens.",
+      message: "Could not retrieve user's role.",
     });
 
   const accessTokenPayload: AccessTknPayload = createPayload({
