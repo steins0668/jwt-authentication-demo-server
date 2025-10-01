@@ -68,14 +68,27 @@ export async function createTokens(
     isPersistentAuth: isPersistentAuth ?? false,
   });
 
-  const accessToken = createJwt({
-    tokenType: "access",
-    payload: accessTokenPayload,
-  });
-  const refreshToken = createJwt({
-    tokenType: "refresh",
-    payload: refreshTokenPayload,
-  });
+  try {
+    const accessToken = createJwt({
+      tokenType: "access",
+      payload: accessTokenPayload,
+    });
+    const refreshToken = createJwt({
+      tokenType: "refresh",
+      payload: refreshTokenPayload,
+    });
 
-  return ResultBuilder.success({ accessToken, refreshToken }, "TOKEN_CREATION");
+    return ResultBuilder.success(
+      { accessToken, refreshToken },
+      "TOKEN_CREATION"
+    );
+  } catch (err) {
+    return ResultBuilder.fail(
+      Session.normalizeError({
+        name: "SESSION_TOKEN_CREATION_ERROR",
+        message: "Failed creating tokens.",
+        err,
+      })
+    );
+  }
 }
