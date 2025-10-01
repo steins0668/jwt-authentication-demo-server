@@ -107,6 +107,7 @@ export async function handleSignIn(
     refreshToken,
     isPersistentAuth ? persistentCookie : sessionCookie
   );
+  res.json({ accessToken });
 }
 
 function getSafeId(identifier: string): string {
