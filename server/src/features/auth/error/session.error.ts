@@ -1,5 +1,6 @@
 import { BaseError } from "../../../error";
-import { isError } from "../../../utils";
+import { isError, StatusCode } from "../../../utils";
+import { AuthStatusCode } from "../data";
 
 export namespace Session {
   export type ErrorName =
@@ -23,5 +24,12 @@ export namespace Session {
     if (isError(ErrorClass, err)) return err;
 
     return new ErrorClass({ name, message, cause: err });
+  }
+
+  export function getErrStatusCode(error: ErrorClass) {
+    return StatusCode.fromError({
+      errorName: error.name,
+      statusCodeMap: AuthStatusCode.SessionError,
+    });
   }
 }
