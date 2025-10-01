@@ -1,5 +1,6 @@
 import { CookieOptions } from "express";
 import jwt from "jsonwebtoken";
+import "dotenv/config";
 import { AuthToken } from "../types";
 
 export type CookieConfig = {
