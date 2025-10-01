@@ -23,7 +23,7 @@ export async function handleSignIn(
 
     res
       .status(AuthError.SignIn.getErrStatusCode(error))
-      .json({ success: false, ...error });
+      .json({ success: false, message: error.message });
 
     const safeId = getSafeId(authDetails.identifier);
     const logMsg = `Failed sign-in attempt from user ${safeId}.`;
@@ -52,7 +52,7 @@ export async function handleSignIn(
 
     res
       .status(AuthError.Session.getErrStatusCode(error))
-      .json({ success: false, ...error, message: internalErrMsg });
+      .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed creating tokens.", error);
 
@@ -77,7 +77,7 @@ export async function handleSignIn(
 
     res
       .status(AuthError.Session.getErrStatusCode(error))
-      .json({ success: false, ...error, message: internalErrMsg });
+      .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed starting session.", error);
 
@@ -92,7 +92,7 @@ export async function handleSignIn(
 
     res
       .status(AuthError.SignIn.getErrStatusCode(error))
-      .json({ success: false, ...error, message: internalErrMsg });
+      .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);
 
