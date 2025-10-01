@@ -21,10 +21,10 @@ type JwtOptions = AccessOptions | RefreshOptions;
  * @function createJwt
  * @description A utility function that creates and returns a `JWT` from a provided
  * `options` parameter.
- * @param options.tokenType The token type. See {@link AUTH.TokenType} for info on the allowed
+ * @param options.tokenType The token type. See {@link AuthToken} for info on the allowed
  * values.
- * @param options.payload The payload object. May either be {@link AccessTokenPayload} or
- * {@link RefreshTokenPayload} depending on the value of {@link tokenType}
+ * @param options.payload The payload object. May either be a refresh token or access token
+ * payload depending on the value of {@link tokenType}
  * @returns The created `JWT`.
  *
  * ! this change was done in favor of allowing the method to accept different payload types
