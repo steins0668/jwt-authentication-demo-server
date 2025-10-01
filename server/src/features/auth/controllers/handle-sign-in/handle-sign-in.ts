@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
-import { ResultBuilder, StatusCode } from "../../../../utils";
-import { AuthStatusCode } from "../../data";
+import { ResultBuilder } from "../../../../utils";
+import { CookieConfig, TOKEN_CONFIG_RECORD } from "../../data";
 import * as AuthError from "../../error";
 import { SignInSchema } from "../../schemas";
+import { SignInResult } from "../../types";
+import { createTokens } from "../../utils";
 import { verifyUser } from "./verify-user";
 import { getSignInMethod } from "./get-sign-in-method";
 
@@ -10,21 +12,18 @@ export async function handleSignIn(
   req: Request<{}, {}, SignInSchema>,
   res: Response
 ) {
-  const { body: authDetails, requestLogger: logger, userDataService } = req;
+  const { body: authDetails, requestLogger: logger, sessionManager } = req;
 
-  //  validate and verify user credentials
+  //  *validate and verify user credentials
   const verificationResult = await verifyUser(req);
 
   if (!verificationResult.success) {
-    //  authentication failed
+    //  !authentication failed
     const { error } = verificationResult;
-    const { name, message } = error;
 
-    const statusCode = StatusCode.fromError({
-      errorName: name,
-      statusCodeMap: AuthStatusCode.SignInError,
-    });
-    res.status(statusCode).json({ message });
+    res
+      .status(AuthError.SignIn.getErrStatusCode(error))
+      .json({ message: error.message });
 
     const safeId = getSafeId(authDetails.identifier);
     const logMsg = `Failed sign-in attempt from user ${safeId}.`;
@@ -33,7 +32,81 @@ export async function handleSignIn(
     return;
   }
 
+  //  *start session creation
   const { isPersistentAuth } = authDetails;
+  const { result: user } = verificationResult;
+  const sessionNumber = sessionManager.generateSessionNumber(user.userId);
+
+  //  *create tokens
+  const tokenResult = await createTokens(req, {
+    verifiedUser: user,
+    sessionNumber,
+    isPersistentAuth,
+  });
+
+  const internalErrMsg =
+    "An error occurred while authenticating. Please try again later.";
+  if (!tokenResult.success) {
+    //  !failed creating tokens
+    const { error } = tokenResult;
+
+    res
+      .status(AuthError.Session.getErrStatusCode(error))
+      .json({ message: internalErrMsg });
+
+    logger.log("error", "Failed creating tokens.", error);
+
+    return;
+  }
+
+  //  *start session
+  const { accessToken, refreshToken } = tokenResult.result;
+
+  const persistentTokenExpiry = new Date();
+  persistentTokenExpiry.setDate(persistentTokenExpiry.getDate() + 30);
+  const sessionResult = await sessionManager.startSession({
+    sessionNumber,
+    userId: user.userId,
+    refreshToken,
+    expiresAt: isPersistentAuth ? persistentTokenExpiry : null,
+  });
+
+  if (!sessionResult.success) {
+    //  !failed starting session
+    const { error } = sessionResult;
+
+    res
+      .status(AuthError.Session.getErrStatusCode(error))
+      .json({ message: internalErrMsg });
+
+    logger.log("error", "Failed starting session.", error);
+
+    return;
+  }
+
+  const cookieResult = getRefreshConfig();
+
+  if (!cookieResult.success) {
+    //  !failed getting refresh token config
+    const { error } = cookieResult;
+
+    res
+      .status(AuthError.SignIn.getErrStatusCode(error))
+      .json({ message: internalErrMsg });
+
+    logger.log("error", "Failed getting refresh token config.", error);
+
+    return;
+  }
+
+  const { cookieName, persistentCookie, sessionCookie } = cookieResult.result;
+
+  //  *cookie creation
+  res.cookie(
+    cookieName,
+    refreshToken,
+    isPersistentAuth ? persistentCookie : sessionCookie
+  );
 }
 
 function getSafeId(identifier: string): string {
@@ -47,4 +120,19 @@ function getSafeId(identifier: string): string {
     default:
       return JSON.stringify(identifier).slice(0, 50);
   }
+}
+
+function getRefreshConfig():
+  | SignInResult.Success<CookieConfig>
+  | SignInResult.Fail {
+  const { cookieConfig: refreshCookie } = TOKEN_CONFIG_RECORD.refresh;
+
+  if (!refreshCookie)
+    //  cookie config not set
+    return ResultBuilder.fail({
+      name: "SIGN_IN_SYSTEM_ERROR",
+      message: "Refresh token cookie is not configured properly.",
+    });
+
+  return ResultBuilder.success(refreshCookie);
 }
