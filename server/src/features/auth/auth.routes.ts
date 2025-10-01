@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { validateRequest } from "../../middlewares";
 import * as controllers from "./controllers";
-import { attachUserDataService } from "./middlewares";
+import { attachSessionManager, attachUserDataService } from "./middlewares";
 import { registerSchema } from "./schemas/register.schema";
 
 export const AuthRoutes = Router();
@@ -13,6 +13,8 @@ AuthRoutes.post(
   validateRequest(registerSchema),
   controllers.handleRegister
 );
+
+AuthRoutes.use(attachSessionManager);
 
 AuthRoutes.post("/sign-in", controllers.handleSignIn);
 
