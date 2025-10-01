@@ -21,7 +21,18 @@ export namespace SignIn {
   }) {
     if (isError(ErrorClass, err)) return err;
 
-    return new ErrorClass({ name, message, cause: err });
+    return new ErrorClass({
+      name,
+      message,
+      cause:
+        err instanceof Error
+          ? {
+              name: err.name,
+              message: err.message,
+              stack: err.stack,
+            }
+          : err,
+    });
   }
 
   export function getErrStatusCode(error: ErrorClass) {
