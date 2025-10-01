@@ -2,7 +2,7 @@ import { CookieOptions } from "express";
 import jwt from "jsonwebtoken";
 import { AuthToken } from "../types";
 
-type CookieConfig = {
+export type CookieConfig = {
   cookieName: string;
   clearCookie: CookieOptions;
   persistentCookie: CookieOptions;
