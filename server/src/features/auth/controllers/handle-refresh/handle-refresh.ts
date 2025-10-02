@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import { BaseResult } from "../../../types";
-import { ResultBuilder } from "../../../utils";
-import { type CookieConfig, TOKEN_CONFIG_RECORD } from "../data";
-import * as AuthError from "../error";
+import { BaseResult } from "../../../../types";
+import { ResultBuilder } from "../../../../utils";
+import { type CookieConfig, TOKEN_CONFIG_RECORD } from "../../data";
+import * as AuthError from "../../error";
 
 export async function handleRefresh(req: Request, res: Response) {
   const { requestLogger: logger } = req;
