@@ -1,5 +1,6 @@
 import express from "express";
 import cors, { type CorsOptions } from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { attachRequestLogger, requestProfiler } from "./middlewares";
 import { AuthRoutes } from "./features/auth";
@@ -21,6 +22,7 @@ app.use(cors(corsOptions));
 
 app.use(express.json()); // json parsing
 
+app.use(cookieParser());
 app.use(attachRequestLogger);
 app.use(requestProfiler);
 
