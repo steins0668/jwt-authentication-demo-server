@@ -113,7 +113,7 @@ export async function handleRefresh(req: Request, res: Response) {
     refreshToken,
     isPersistentAuth ? persistentCookie : sessionCookie
   );
-  res.json({ success: true, accessToken });
+  res.json({ success: true, accessToken, refreshToken }); //  ! refresh token is for demo only
 }
 
 function getRefreshConfig():
