@@ -1,10 +1,7 @@
 import type { Request, Response } from "express";
-import { ResultBuilder } from "../../../../utils";
-import { CookieConfig, TOKEN_CONFIG_RECORD } from "../../data";
 import * as AuthError from "../../error";
 import { SignInSchema } from "../../schemas";
-import { SignInResult } from "../../types";
-import { createTokens } from "../../utils";
+import { createTokens, getRefreshConfig } from "../../utils";
 import { verifyUser } from "./verify-user";
 import { getSignInMethod } from "./get-sign-in-method";
 
@@ -91,7 +88,7 @@ export async function handleSignIn(
     const { error } = cookieResult;
 
     res
-      .status(AuthError.SignIn.getErrStatusCode(error))
+      .status(AuthError.AuthConfig.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);
@@ -121,19 +118,4 @@ function getSafeId(identifier: string): string {
     default:
       return JSON.stringify(identifier).slice(0, 50);
   }
-}
-
-function getRefreshConfig():
-  | SignInResult.Success<CookieConfig>
-  | SignInResult.Fail {
-  const { cookieConfig: refreshCookie } = TOKEN_CONFIG_RECORD.refresh;
-
-  if (!refreshCookie)
-    //  cookie config not set
-    return ResultBuilder.fail({
-      name: "SIGN_IN_SYSTEM_ERROR",
-      message: "Refresh token cookie is not configured properly.",
-    });
-
-  return ResultBuilder.success(refreshCookie);
 }
