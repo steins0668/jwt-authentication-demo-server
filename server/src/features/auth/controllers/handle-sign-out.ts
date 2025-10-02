@@ -31,7 +31,7 @@ export async function handleSignOut(req: Request, res: Response) {
     const { cookieName: refresh, clearCookie } = cookieConfig;
     res
       .clearCookie(refresh, clearCookie)
-      .status(204)
+      .status(200)
       .json({ success: true, message: "Logged out successfully." });
   };
 
