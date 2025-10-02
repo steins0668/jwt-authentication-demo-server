@@ -18,7 +18,7 @@ export abstract class Repository<
   }
 
   public async execTransaction<T>(
-    fn: (tx: DbContext | TxContext) => Promise<T>
+    fn: (tx: TxContext) => Promise<T>
   ): Promise<T> {
     return this._dbContext.transaction(async (tx) => fn(tx));
   }
@@ -33,7 +33,7 @@ export abstract class Repository<
    * @returns The inserted object if successful or `undefined` if the insert operation fails.
    */
   protected async insertRow(options: {
-    dbOrTx?: DbContext | TxContext;
+    dbOrTx?: DbContext | TxContext | undefined;
     value: TInsertModel;
   }): Promise<TSelectResult | undefined> {
     const { dbOrTx = this._dbContext, value } = options;
@@ -98,7 +98,7 @@ export abstract class Repository<
    * // Retrieves items 11–20 of projects where LanguageId = 1, ordered by ProjectId ascending.
    */
   protected async GetRows(options: {
-    dbOrTx?: DbContext | TxContext;
+    dbOrTx?: DbContext | TxContext | undefined;
     column: AnySQLiteColumn;
     isAscending?: boolean | undefined;
     pageSize?: number | undefined;

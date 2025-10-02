@@ -1,24 +1,34 @@
 import bcrypt from "bcrypt";
 import { createContext } from "../../../db/createContext";
-import { UserRepository, type IUserFilter } from "./repositories";
+import {
+  RoleRepository,
+  UserRepository,
+  type IUserFilter,
+} from "./repositories";
 import type { InsertModels, ViewModels } from "../types";
 import { ResultBuilder } from "../../../utils";
-import { Register } from "../error";
 import type { BaseResult } from "../../../types";
 import { DbAccess } from "../../../error";
+import { SignInSchema } from "../schemas";
 
 type NewUser = InsertModels.User;
 
 export async function createUserDataService() {
   const dbContext = await createContext();
+  const roleRepoInstance = new RoleRepository(dbContext);
   const userRepoInstance = new UserRepository(dbContext);
-  return new UserDataService(userRepoInstance);
+  return new UserDataService(roleRepoInstance, userRepoInstance);
 }
 
 export class UserDataService {
+  private readonly _roleRepository: RoleRepository;
   private readonly _userRepository: UserRepository;
 
-  public constructor(userRepository: UserRepository) {
+  public constructor(
+    roleRepository: RoleRepository,
+    userRepository: UserRepository
+  ) {
+    this._roleRepository = roleRepository;
     this._userRepository = userRepository;
   }
 
@@ -72,7 +82,9 @@ export class UserDataService {
    * provided by either a {@link NewUser}, a {@link LoginOptions} object.
    * @param options.user A {@link NewUser} object used for filtering the database query
    * during register operations.
-   * @param options.login A {@link LoginOptions} object used for filtering the databse query
+   * @param options.signInMethod A `string` specifying whether the user is logging in through email or
+   * username. Matches the `keys` of the {@link IUserFilter} type.
+   * @param options.authDetails A {@link SignInSchema} object used for filtering the database query
    * during login operations.
    * @returns A `promise` resolving to a success result object containing {@link UserViewModel} if a `User`
    * is found, or `undefined` if no `User` is found. If the query operation fails, returns a fail result
@@ -99,7 +111,12 @@ export class UserDataService {
           break;
         }
         case "login": {
-          //  todo: add login case
+          const { signInMethod, authDetails } = options;
+          userFilter[signInMethod] = authDetails.identifier;
+          break;
+        }
+        case "userId": {
+          userFilter.userId = options.userId;
           break;
         }
       }
@@ -117,15 +134,30 @@ export class UserDataService {
       );
     }
   }
+
+  public async getUserRole(roleId: number): Promise<string | undefined> {
+    const role = await this._roleRepository.getRole({
+      searchBy: "id",
+      id: roleId,
+    });
+
+    return role?.roleName;
+  }
 }
-type TryGetUserOptions = WithUser | WithLogin;
+type TryGetUserOptions = WithUser | WithLogin | WithId;
 
 type WithUser = {
   type: "user";
   user: NewUser;
 };
 
-//todo: add login options type
 type WithLogin = {
   type: "login";
+  signInMethod: "email" | "username";
+  authDetails: SignInSchema;
+};
+
+type WithId = {
+  type: "userId";
+  userId: number;
 };
