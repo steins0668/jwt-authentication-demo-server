@@ -6,6 +6,7 @@ export namespace Session {
   export type ErrorName =
     | "SESSION_START_ERROR" //  failed starting session
     | "SESSION_TOKEN_CREATION_ERROR" //  failed creating token
+    | "SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR" //   token is invalid or expired
     | "SESSION_TOKEN_ROTATION_ERROR" //  failed rotating tokens
     | "SESSION_TOKEN_REUSE_ERROR" //  detected token reuse attempt
     | "SESSION_CLEANUP_ERROR" //  failed cleaning up/ending session
