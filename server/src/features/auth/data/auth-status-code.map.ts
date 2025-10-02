@@ -6,7 +6,7 @@ export namespace AuthStatusCode {
     SIGN_IN_INVALID_CREDENTIALS_ERROR: 401, //  unauthorized
     SIGN_IN_VERIFICATION_ERROR: 401, //  unauthorized
     SIGN_IN_SYSTEM_ERROR: 500, //  internal server error
-  };
+  } as const;
 
   export const SessionError: Exhaustive<Session.ErrorName> = {
     SESSION_CLEANUP_ERROR: 500,
@@ -15,10 +15,10 @@ export namespace AuthStatusCode {
     SESSION_TOKEN_REUSE_ERROR: 403,
     SESSION_TOKEN_ROTATION_ERROR: 500,
     SESSION_REFRESH_ERROR: 500,
-  };
+  } as const;
 
   export const AuthConfigError: Exhaustive<AuthConfig.ErrorName> = {
     AUTH_CONFIG_COOKIE_CONFIG_ERROR: 500,
     AUTH_CONFIG_ENV_TKN_SECRET_ERROR: 500,
-  };
+  } as const;
 }
