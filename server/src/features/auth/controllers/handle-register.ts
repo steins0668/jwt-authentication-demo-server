@@ -14,38 +14,40 @@ export async function handleRegister(
   });
 
   if (userQuery.success && userQuery.result) {
-    //  query completed and there is a result
-    const msg = "User already exists.";
+    //  ! query completed and there is a result
+    const message = "User already exists.";
 
-    requestLogger.log("debug", msg);
-    res.status(409).json({ msg });
+    requestLogger.log("debug", message);
+    res.status(409).json({ success: false, message });
     return;
   }
   if (!userQuery.success) {
-    //  query interrupted
+    //  ! query interrupted
     const { message: logMsg } = userQuery.error;
     requestLogger.log("error", logMsg, userQuery.error);
 
-    const resMsg = "Database error. Please try again later.";
-    res.status(500).json({ msg: resMsg });
+    const resMsg = "Error adding user. Please try again later.";
+    res.status(500).json({ success: false, message: resMsg });
     return;
   }
 
-  // inserting user
+  // * inserting user
   requestLogger.log("debug", "Inserting new user...");
   const addUser = await userDataService.tryAddUser(user);
 
   if (addUser.success) {
-    const msg = "User registration success.";
+    //  * success register
+    const message = "User registration success.";
 
-    requestLogger.log("debug", msg);
-    res.status(201).json({ msg });
+    requestLogger.log("debug", message);
+    res.status(201).json({ success: true, message });
   } else {
+    //  ! fail register
     const { message: logMsg } = addUser.error;
     requestLogger.log("error", logMsg, addUser.error);
 
     const resMsg = "Database error. Please try again later.";
-    res.status(500).json({ ms: resMsg });
+    res.status(500).json({ success: true, message: resMsg });
   }
 
   return;
