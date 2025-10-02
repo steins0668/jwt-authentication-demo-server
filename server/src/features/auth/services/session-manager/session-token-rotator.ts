@@ -21,7 +21,9 @@ export class SessionTokenRotator {
     sessionNumber: string;
     oldToken: string;
     newToken: string;
-  }): Promise<SessionResult.Success<number> | SessionResult.Fail> {
+  }): Promise<
+    SessionResult.Success<number, "SESSION_TOKEN_ROTATION"> | SessionResult.Fail
+  > {
     const { sessionNumber, oldToken, newToken } = data;
 
     try {
@@ -48,7 +50,7 @@ export class SessionTokenRotator {
         }
       );
 
-      return ResultBuilder.success(result, "TOKEN_ROTATION");
+      return ResultBuilder.success(result, "SESSION_TOKEN_ROTATION");
     } catch (err) {
       const error = Session.normalizeError({
         name: "SESSION_TOKEN_ROTATION_ERROR",

@@ -3,10 +3,14 @@ import { Session } from "../error";
 
 export namespace SessionResult {
   type SuccessSource =
-    | "SESSION_START"
     | "SESSION_END"
-    | "TOKEN_ROTATION"
-    | "SESSION_REFRESH";
-  export type Success<TResult> = BaseResult.Success<TResult, SuccessSource>;
+    | "SESSION_REFRESH"
+    | "SESSION_START"
+    | "SESSION_TOKEN_VERIFY"
+    | "SESSION_TOKEN_ROTATION";
+  export type Success<
+    TResult,
+    TSource extends SuccessSource
+  > = BaseResult.Success<TResult, TSource>;
   export type Fail = BaseResult.Fail<Session.ErrorClass>;
 }

@@ -54,7 +54,9 @@ export class SessionManager {
     sessionNumber: string;
     refreshToken: string;
     expiresAt?: Date | null;
-  }): Promise<SessionResult.Success<string> | SessionResult.Fail> {
+  }): Promise<
+    SessionResult.Success<string, "SESSION_START"> | SessionResult.Fail
+  > {
     return await this._starter.newSession(sessionData);
   }
 
@@ -72,7 +74,9 @@ export class SessionManager {
     sessionNumber: string;
     oldToken: string;
     newToken: string;
-  }): Promise<SessionResult.Success<number> | SessionResult.Fail> {
+  }): Promise<
+    SessionResult.Success<number, "SESSION_TOKEN_ROTATION"> | SessionResult.Fail
+  > {
     return await this._rotator.rotate(sessionData);
   }
 
@@ -86,7 +90,10 @@ export class SessionManager {
    */
   public async endSession(
     sessionNumber: string
-  ): Promise<SessionResult.Success<number | undefined> | SessionResult.Fail> {
+  ): Promise<
+    | SessionResult.Success<number | undefined, "SESSION_END">
+    | SessionResult.Fail
+  > {
     return await this._cleanup.endSession(sessionNumber);
   }
 
@@ -99,7 +106,7 @@ export class SessionManager {
    * the error class is returned.
    */
   public async endIdleSessions(): Promise<
-    SessionResult.Success<number[]> | SessionResult.Fail
+    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
   > {
     return await this._cleanup.endIdleSessions();
   }
@@ -112,7 +119,7 @@ export class SessionManager {
    * containing the error class is returned.
    */
   public async endExpiredSessions(): Promise<
-    SessionResult.Success<number[]> | SessionResult.Fail
+    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
   > {
     return await this._cleanup.endExpiredSessions();
   }

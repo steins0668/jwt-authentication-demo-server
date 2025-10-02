@@ -22,7 +22,10 @@ export class SessionCleanupService {
    */
   public async endSession(
     sessionNumber: string
-  ): Promise<SessionResult.Success<number | undefined> | SessionResult.Fail> {
+  ): Promise<
+    | SessionResult.Success<number | undefined, "SESSION_END">
+    | SessionResult.Fail
+  > {
     try {
       const deleteResult = await this._userSessionRepository.deleteSessions({
         scope: "user_session",
@@ -51,7 +54,7 @@ export class SessionCleanupService {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endIdleSessions(): Promise<
-    SessionResult.Success<number[]> | SessionResult.Fail
+    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
   > {
     try {
       const deletedSessionIds =
@@ -80,7 +83,7 @@ export class SessionCleanupService {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endExpiredSessions(): Promise<
-    SessionResult.Success<number[]> | SessionResult.Fail
+    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
   > {
     try {
       const deletedSessionIds =

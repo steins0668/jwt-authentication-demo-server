@@ -29,7 +29,9 @@ export class SessionStarter {
     sessionNumber: string;
     refreshToken: string;
     expiresAt?: Date | null;
-  }): Promise<SessionResult.Success<string> | SessionResult.Fail> {
+  }): Promise<
+    SessionResult.Success<string, "SESSION_START"> | SessionResult.Fail
+  > {
     const {
       userId,
       sessionNumber,
