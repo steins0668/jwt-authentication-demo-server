@@ -4,3 +4,4 @@ export * from "./auth-token.type";
 export * as ViewModels from "./auth-viewmodels.type";
 export * from "./session-result.type";
 export * from "./sign-in-result.type";
+export * from "./user-data-result.type";
