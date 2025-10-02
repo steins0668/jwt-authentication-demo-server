@@ -37,6 +37,7 @@ export async function handleSignOut(req: Request, res: Response) {
 
   //  * get refresh tkn
   const refreshTkn = cookies?.[refresh] as string | undefined;
+  //  ! refresh tkn not found. just clear cookie
   if (refreshTkn === undefined) return clearCookie(cookieConfig.result);
 
   //  * verify payload
