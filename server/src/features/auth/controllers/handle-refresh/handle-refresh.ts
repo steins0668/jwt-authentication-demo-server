@@ -5,7 +5,7 @@ import { type CookieConfig, TOKEN_CONFIG_RECORD } from "../../data";
 import * as AuthError from "../../error";
 import { SessionResult, ViewModels } from "../../types";
 import { createTokens } from "../../utils";
-import { verifyRefreshTkn } from "./verify-refresh-tkn";
+import { verifyRefreshTkn } from "../../utils/verify-refresh-tkn";
 
 export async function handleRefresh(req: Request, res: Response) {
   const { requestLogger: logger, cookies, sessionManager } = req;

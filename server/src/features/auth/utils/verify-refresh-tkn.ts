@@ -1,10 +1,10 @@
 import { Request } from "express";
 import jwt from "jsonwebtoken";
-import { getTknSecrets } from "../../data";
-import { refreshTknPayload, RefreshTknPayload } from "../../schemas";
-import { Session } from "../../error";
-import { SessionResult } from "../../types";
-import { ResultBuilder } from "../../../../utils";
+import { getTknSecrets } from "../data";
+import { refreshTknPayload, RefreshTknPayload } from "../schemas";
+import { Session } from "../error";
+import { SessionResult } from "../types";
+import { ResultBuilder } from "../../../utils";
 
 /**
  * @public
