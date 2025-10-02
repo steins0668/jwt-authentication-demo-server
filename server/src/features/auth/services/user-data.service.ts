@@ -115,6 +115,10 @@ export class UserDataService {
           userFilter[signInMethod] = authDetails.identifier;
           break;
         }
+        case "userId": {
+          userFilter.userId = options.userId;
+          break;
+        }
       }
 
       const user = await this._userRepository.getUser(userFilter);
@@ -140,7 +144,7 @@ export class UserDataService {
     return role?.roleName;
   }
 }
-type TryGetUserOptions = WithUser | WithLogin;
+type TryGetUserOptions = WithUser | WithLogin | WithId;
 
 type WithUser = {
   type: "user";
@@ -151,4 +155,9 @@ type WithLogin = {
   type: "login";
   signInMethod: "email" | "username";
   authDetails: SignInSchema;
+};
+
+type WithId = {
+  type: "userId";
+  userId: number;
 };
