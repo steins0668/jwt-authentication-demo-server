@@ -33,12 +33,6 @@ type JwtOptions = AccessOptions | RefreshOptions;
 export function createJwt({ tokenType, payload }: JwtOptions): string {
   const { secret, signOptions } = TOKEN_CONFIG_RECORD[tokenType];
 
-  if (!secret)
-    throw new AuthConfig.ErrorClass({
-      name: "AUTH_CONFIG_ENV_TKN_SECRET_ERROR",
-      message: `${tokenType.toUpperCase()}_TOKEN_SECRET is not defined in env.`,
-    });
-
   const token: string = jwt.sign(payload, secret, signOptions);
 
   return token;

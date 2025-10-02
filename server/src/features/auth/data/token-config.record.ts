@@ -2,6 +2,7 @@ import { CookieOptions } from "express";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 import { AuthToken } from "../types";
+import { getTknSecrets } from "./auth-env.constants";
 
 export type CookieConfig = {
   cookieName: string;
@@ -10,7 +11,7 @@ export type CookieConfig = {
   sessionCookie: CookieOptions;
 };
 type TokenConfig = {
-  secret: string | undefined;
+  secret: string;
   signOptions: jwt.SignOptions;
   cookieConfig?: CookieConfig;
 };
@@ -23,13 +24,13 @@ type TokenConfigRecord = Record<AuthToken, TokenConfig>;
  */
 export const TOKEN_CONFIG_RECORD: TokenConfigRecord = {
   access: {
-    secret: process.env.ACCESS_TOKEN_SECRET,
+    secret: getTknSecrets().accessSecret,
     signOptions: {
       expiresIn: "5m",
     } as jwt.SignOptions,
   },
   refresh: {
-    secret: process.env.REFRESH_TOKEN_SECRET,
+    secret: getTknSecrets().refreshSecret,
     signOptions: {
       expiresIn: "30d",
     } as jwt.SignOptions,
