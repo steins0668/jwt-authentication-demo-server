@@ -1,5 +1,5 @@
 import { Exhaustive } from "../../../types";
-import { Session, SignIn } from "../error";
+import { AuthConfig, Session, SignIn } from "../error";
 
 export namespace AuthStatusCode {
   export const SignInError: Exhaustive<SignIn.ErrorName> = {
@@ -15,5 +15,10 @@ export namespace AuthStatusCode {
     SESSION_TOKEN_REUSE_ERROR: 403,
     SESSION_TOKEN_ROTATION_ERROR: 500,
     SESSION_REFRESH_ERROR: 500,
+  };
+
+  export const AuthConfigError: Exhaustive<AuthConfig.ErrorName> = {
+    AUTH_CONFIG_COOKIE_CONFIG_ERROR: 500,
+    AUTH_CONFIG_ENV_TKN_SECRET_ERROR: 500,
   };
 }
